@@ -4,19 +4,11 @@ import { withAuth } from '@/middleware/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { deploymentId: string } }
+  { params }: { params: Promise<{ deploymentId: string }> }
 ) {
-  try {
-    // Validate authentication
-    const authResult = await requireAuth(request, ['admin']);
-    if (!authResult.success) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { deploymentId } = params;
+  return withAuth(request, async (request) => {
+    try {
+      const { deploymentId } = await params;
 
     if (!deploymentId) {
       return NextResponse.json(
@@ -74,4 +66,5 @@ export async function GET(
       { status: 500 }
     );
   }
+  }, { requireAdmin: true });
 }
