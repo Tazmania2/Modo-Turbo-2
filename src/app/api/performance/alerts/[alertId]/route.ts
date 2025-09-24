@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { performanceMonitor } from '@/services/performance-monitor.service';
 
-interface RouteParams {
-  params: {
-    alertId: string;
-  };
-}
-
 /**
  * PATCH /api/performance/alerts/[alertId]
  * Resolve a performance alert
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(
+  request: NextRequest, 
+  { params }: { params: Promise<{ alertId: string }> }
+) {
   try {
-    const { alertId } = params;
+    const { alertId } = await params;
     
     const success = performanceMonitor.resolveAlert(alertId);
     

@@ -24,7 +24,7 @@ export async function GET(
       );
     }
 
-    const { playerId } = params;
+    const { playerId  } = await params;
 
     if (!playerId) {
       return NextResponse.json(

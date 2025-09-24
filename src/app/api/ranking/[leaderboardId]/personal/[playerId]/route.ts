@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rankingIntegrationService } from '@/services/ranking-integration.service';
 
-interface RouteParams {
-  params: Promise<{
-    leaderboardId: string;
-    playerId: string;
-  }>;
+>;
 }
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ 302 }> }) {
   const { leaderboardId, playerId } = await params;
   try {
     const { searchParams } = new URL(request.url);

@@ -24,7 +24,7 @@ export async function GET(
       );
     }
 
-    const { seasonId, playerId } = params;
+    const { seasonId, playerId  } = await params;
 
     if (!seasonId || !playerId) {
       return NextResponse.json(

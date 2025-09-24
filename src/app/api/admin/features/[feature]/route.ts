@@ -2,16 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { featureToggleService } from '@/services/feature-toggle.service';
 import { verifyAuthToken } from '@/utils/auth';
 
-interface RouteParams {
-  params: Promise<{
-    feature: string;
-  }>;
-}
-
 /**
  * PUT /api/admin/features/[feature] - Update a single feature toggle
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest, 
+  { params }: { params: Promise<{ feature: string }> }
+) {
   const { feature } = await params;
   try {
     const { searchParams } = new URL(request.url);
@@ -84,7 +81,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 /**
  * GET /api/admin/features/[feature] - Check if a specific feature is enabled
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ 2222 }> }) {
   const { feature } = await params;
   try {
     const { searchParams } = new URL(request.url);
