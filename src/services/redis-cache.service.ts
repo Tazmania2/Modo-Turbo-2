@@ -343,7 +343,7 @@ export class RedisCacheService {
    */
   async mset<T>(keyValuePairs: Array<{ key: string; value: T; ttl?: number }>): Promise<boolean> {
     try {
-      let success = true;
+      const success = true;
       
       if (this.isConnected && this.redis) {
         const pipeline = this.redis.pipeline();

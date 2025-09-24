@@ -4,15 +4,16 @@ import { validateRequest } from '@/middleware/validation';
 import { handleApiError } from '@/middleware/error-handler';
 import { dashboardProcessorService } from '@/services/dashboard-processor.service';
 
->;
-}
+type RouteParams = {
+  params: Promise<{ playerId: string }>;
+};
 
 /**
  * GET /api/dashboard/player/[playerId]
  * Retrieves dashboard data for a specific player
  * Implements requirements 1.1, 1.2, 1.3: Display personal dashboard metrics
  */
-async function handler(request: NextRequest, { params }: { params: Promise<{ 620 }> }) {
+async function handler(request: NextRequest, { params }: RouteParams) {
   const { playerId } = await params;
   
   try {

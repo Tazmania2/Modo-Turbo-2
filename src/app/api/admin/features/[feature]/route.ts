@@ -81,7 +81,7 @@ export async function PUT(
 /**
  * GET /api/admin/features/[feature] - Check if a specific feature is enabled
  */
-export async function GET(request: NextRequest, { params }: { params: Promise<{ 2222 }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ feature: string }> }) {
   const { feature } = await params;
   try {
     const { searchParams } = new URL(request.url);

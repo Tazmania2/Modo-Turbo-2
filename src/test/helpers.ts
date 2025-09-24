@@ -1,7 +1,9 @@
 import { vi } from 'vitest';
-import { ReactElement } from 'react';
+import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach } from 'node:test';
+import { beforeEach } from 'node:test';
 
 // Mock data generators
 export const createMockPlayer = (overrides = {}) => ({
@@ -149,11 +151,13 @@ export const renderWithProviders = (
 ) => {
   const { queryClient = createTestQueryClient(), ...renderOptions } = options;
 
-  const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  const Wrapper = ({ children }: { children: React.ReactNode }) => {
+    return React.createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children
+    );
+  };
 
   return render(ui, { wrapper: Wrapper, ...renderOptions });
 };

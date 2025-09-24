@@ -443,7 +443,7 @@ export function DeploymentPanel() {
                 <div className="text-center py-8">
                   <Eye className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-gray-500">
-                    Select a deployment and click "Verify" to see verification results
+                    Select a deployment and click &quot;Verify&quot; to see verification results
                   </p>
                 </div>
               )}

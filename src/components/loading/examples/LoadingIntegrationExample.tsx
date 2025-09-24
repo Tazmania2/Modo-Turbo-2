@@ -204,7 +204,7 @@ export const LoadingIntegrationExample: React.FC = () => {
             </div>
           ) : (
             <div className="p-6 text-center text-gray-500">
-              <p>No dashboard data loaded. Click "Load Dashboard" to fetch data.</p>
+              <p>No dashboard data loaded. Click &quot;Load Dashboard&quot; to fetch data.</p>
             </div>
           )}
         </LoadingManager>
@@ -270,7 +270,7 @@ export const LoadingIntegrationExample: React.FC = () => {
             </div>
           ) : (
             <div className="p-6 text-center text-gray-500">
-              <p>No ranking data loaded. Click "Load Ranking" to fetch data.</p>
+              <p>No ranking data loaded. Click &quot;Load Ranking&quot; to fetch data.</p>
             </div>
           )}
         </LoadingManager>
