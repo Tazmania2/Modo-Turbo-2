@@ -6,7 +6,7 @@ const InvalidationRequestSchema = z.object({
   type: z.enum(['player_update', 'team_change', 'leaderboard_update', 'config_change', 'manual']),
   scope: z.enum(['global', 'player', 'team', 'leaderboard', 'config']),
   identifier: z.string().optional(),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.string(), z.any()).optional()
 });
 
 /**

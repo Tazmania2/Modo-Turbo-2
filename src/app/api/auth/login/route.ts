@@ -14,7 +14,7 @@ export interface LoginRequest {
 async function loginHandler(
   request: NextRequest,
   context: any,
-  validatedData?: { body: LoginRequest }
+  validatedData?: { body?: LoginRequest; query?: any; params?: any }
 ) {
   try {
     if (!validatedData?.body) {
