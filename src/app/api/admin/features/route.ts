@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest) {
     const result = await featureToggleService.updateMultipleFeatures(
       instanceId,
       updates,
-      authResult.userId || 'unknown'
+      authResult.user?._id || 'unknown'
     );
 
     if (result.success) {

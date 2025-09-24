@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     const result = await featureToggleService.resetFeaturesToDefaults(
       instanceId,
-      authResult.userId || 'unknown'
+      authResult.user?._id || 'unknown'
     );
 
     if (result.success) {

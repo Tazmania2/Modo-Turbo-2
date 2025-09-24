@@ -217,24 +217,24 @@ class IntegrationTestRunner {
       let output = '';
       let errors: string[] = [];
 
-      const process = spawn(command, args, {
+      const childProcess = spawn(command, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         cwd: process.cwd()
       });
 
-      process.stdout?.on('data', (data) => {
+      childProcess.stdout?.on('data', (data) => {
         const text = data.toString();
         output += text;
         console.log(text);
       });
 
-      process.stderr?.on('data', (data) => {
+      childProcess.stderr?.on('data', (data) => {
         const text = data.toString();
         errors.push(text);
         console.error(text);
       });
 
-      process.on('close', (code) => {
+      childProcess.on('close', (code) => {
         const duration = performance.now() - startTime;
         const status = code === 0 ? 'PASS' : 'FAIL';
 

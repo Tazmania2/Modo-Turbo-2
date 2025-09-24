@@ -92,12 +92,13 @@ export async function POST(request: NextRequest) {
 
       if (!setupResult.success) {
         return NextResponse.json(
-          { message: setupResult.message || 'Failed to save credentials' },
+          { message: setupResult.errors?.[0] || 'Failed to save credentials' },
           { status: 500 }
         );
       }
 
-      config = setupResult.configuration;
+      // Get the newly created configuration
+      config = await whiteLabelConfigService.getConfiguration(setupResult.instanceId!);
     } else {
       // Update existing configuration with new credentials
       const encryptedApiKey = encrypt(apiKey);
@@ -115,11 +116,11 @@ export async function POST(request: NextRequest) {
         lastModifiedBy: userId
       };
 
-      const saveResult = await whiteLabelConfigService.saveConfiguration(updatedConfig);
+      const saveResult = await whiteLabelConfigService.saveConfiguration(instanceId, updatedConfig, userId);
       
       if (!saveResult.success) {
         return NextResponse.json(
-          { message: saveResult.message || 'Failed to save credentials' },
+          { message: saveResult.errors?.[0] || 'Failed to save credentials' },
           { status: 500 }
         );
       }

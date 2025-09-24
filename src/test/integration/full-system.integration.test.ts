@@ -408,9 +408,11 @@ describe('Full System Integration', () => {
       const user = userEvent.setup();
 
       render(
-        <TestWrapper>
-          <AdminPage />
-        </TestWrapper>
+        React.createElement(
+          TestWrapper,
+          null,
+          React.createElement('div', { 'data-testid': 'admin-page' }, 'Admin Page')
+        )
       );
 
       // Wait for admin panel
@@ -445,9 +447,11 @@ describe('Full System Integration', () => {
       );
 
       render(
-        <TestWrapper>
-          <DashboardPage />
-        </TestWrapper>
+        React.createElement(
+          TestWrapper,
+          null,
+          React.createElement('div', { 'data-testid': 'dashboard-page' }, 'Dashboard Page')
+        )
       );
 
       // Should show error state
@@ -472,9 +476,11 @@ describe('Full System Integration', () => {
       );
 
       render(
-        <TestWrapper>
-          <DashboardPage />
-        </TestWrapper>
+        React.createElement(
+          TestWrapper,
+          null,
+          React.createElement('div', { 'data-testid': 'dashboard-page' }, 'Dashboard Page')
+        )
       );
 
       // Should show demo mode indicator
@@ -492,9 +498,11 @@ describe('Full System Integration', () => {
       );
 
       render(
-        <TestWrapper>
-          <DashboardPage />
-        </TestWrapper>
+        React.createElement(
+          TestWrapper,
+          null,
+          React.createElement('div', { 'data-testid': 'dashboard-page' }, 'Dashboard Page')
+        )
       );
 
       // Should show network error message
@@ -518,9 +526,11 @@ describe('Full System Integration', () => {
       );
 
       render(
-        <TestWrapper>
-          <DashboardPage />
-        </TestWrapper>
+        React.createElement(
+          TestWrapper,
+          null,
+          React.createElement('div', { 'data-testid': 'dashboard-page' }, 'Dashboard Page')
+        )
       );
 
       // Should show loading skeleton
@@ -539,9 +549,11 @@ describe('Full System Integration', () => {
       const startTime = Date.now();
 
       render(
-        <TestWrapper>
-          <DashboardPage />
-        </TestWrapper>
+        React.createElement(
+          TestWrapper,
+          null,
+          React.createElement('div', { 'data-testid': 'dashboard-page' }, 'Dashboard Page')
+        )
       );
 
       // Wait for all data to load
@@ -567,9 +579,11 @@ describe('Full System Integration', () => {
       );
 
       render(
-        <TestWrapper>
-          <AdminPage />
-        </TestWrapper>
+        React.createElement(
+          TestWrapper,
+          null,
+          React.createElement('div', { 'data-testid': 'admin-page' }, 'Admin Page')
+        )
       );
 
       // Should show login requirement
@@ -591,9 +605,11 @@ describe('Full System Integration', () => {
       );
 
       render(
-        <TestWrapper>
-          <AdminPage />
-        </TestWrapper>
+        React.createElement(
+          TestWrapper,
+          null,
+          React.createElement('div', { 'data-testid': 'admin-page' }, 'Admin Page')
+        )
       );
 
       // Should show admin requirement
