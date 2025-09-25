@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DeploymentAutomationService, AutomationConfig } from '@/services/deployment-automation.service';
 import { WhiteLabelConfigService } from '@/services/white-label-config.service';
 import { errorLogger } from '@/services/error-logger.service';
-import { validateRequest } from '@/middleware/validation';
+import { validateRequestBody } from '@/middleware/validation';
 import { withAuth } from '@/middleware/auth';
 import { z } from 'zod';
 
@@ -10,28 +10,16 @@ const triggerDeploymentSchema = z.object({
   instanceId: z.string().min(1, 'Instance ID is required'),
   target: z.enum(['production', 'preview', 'development']).optional().default('production'),
   branch: z.string().optional(),
-  environmentVariables: z.record(z.string()).optional(),
+  environmentVariables: z.record(z.string(), z.string()).optional(),
   skipHealthCheck: z.boolean().optional().default(false)
 });
 
-export async function POST(request: NextRequest) {
+async function postHandler(request: NextRequest) {
   try {
-    // Validate authentication and admin role
-    const authResult = await requireAuth(request, ['admin']);
-    if (!authResult.success) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     // Validate request body
-    const validationResult = await validateRequest(request, triggerDeploymentSchema);
+    const validationResult = await validateRequestBody(request, triggerDeploymentSchema);
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Invalid request', details: validationResult.errors },
-        { status: 400 }
-      );
+      return validationResult.response;
     }
 
     const { instanceId, target, branch, environmentVariables, skipHealthCheck } = validationResult.data;
@@ -46,8 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize services
-    const configService = new WhiteLabelConfigService();
-    const errorLogger = new ErrorLoggerService();
+    const configService = WhiteLabelConfigService.getInstance();
     const deploymentService = new DeploymentAutomationService(
       automationConfig,
       configService,
@@ -85,6 +72,11 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Export handler with authentication middleware
+export async function POST(request: NextRequest) {
+  return withAuth(request, postHandler, { requireAdmin: true });
 }
 
 function getAutomationConfig(): AutomationConfig | null {

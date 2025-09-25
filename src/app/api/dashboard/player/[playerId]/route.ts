@@ -31,11 +31,12 @@ async function handler(request: NextRequest, { params }: RouteParams) {
     const dashboardType = searchParams.get('type') || 'default';
 
     // Fetch dashboard data
-    const dashboardData = await dashboardProcessorService.getPlayerDashboard(
+    const dashboardData = await dashboardProcessorService.processDashboardData({
       playerId,
-      dashboardType,
-      forceRefresh
-    );
+      dashboardType: dashboardType !== 'default' ? dashboardType : undefined,
+      includeHistory: false,
+      cacheTTL: forceRefresh ? 0 : undefined
+    });
 
     // Check if player exists
     if (!dashboardData) {

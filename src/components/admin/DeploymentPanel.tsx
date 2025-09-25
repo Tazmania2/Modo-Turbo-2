@@ -192,11 +192,11 @@ export function DeploymentPanel() {
       case 'BUILDING':
         return <Badge variant="warning"><Clock className="w-3 h-3 mr-1" />Building</Badge>;
       case 'ERROR':
-        return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Error</Badge>;
+        return <Badge variant="error"><AlertTriangle className="w-3 h-3 mr-1" />Error</Badge>;
       case 'QUEUED':
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Queued</Badge>;
+        return <Badge variant="default"><Clock className="w-3 h-3 mr-1" />Queued</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="default">{status}</Badge>;
     }
   };
 
@@ -362,7 +362,7 @@ export function DeploymentPanel() {
                           Passed
                         </Badge>
                       ) : (
-                        <Badge variant="destructive">
+                        <Badge variant="error">
                           <AlertTriangle className="w-3 h-3 mr-1" />
                           Failed
                         </Badge>
@@ -415,7 +415,7 @@ export function DeploymentPanel() {
                             )}
                             <span className="font-medium">{test.name}</span>
                             {test.critical && (
-                              <Badge variant="destructive" size="sm">Critical</Badge>
+                              <Badge variant="error" size="sm">Critical</Badge>
                             )}
                           </div>
                           <span className="text-sm text-gray-600">{test.duration}ms</span>

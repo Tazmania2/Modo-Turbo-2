@@ -17,7 +17,7 @@ const updateConfigSchema = z.object({
   }).optional(),
   features: z.object({
     ranking: z.boolean().optional(),
-    dashboards: z.record(z.boolean()).optional(),
+    dashboards: z.record(z.string(), z.boolean()).optional(),
     history: z.boolean().optional(),
     personalizedRanking: z.boolean().optional(),
   }).optional(),
@@ -30,12 +30,37 @@ const updateConfigSchema = z.object({
  */
 async function getHandler(request: NextRequest) {
   try {
-    const config = await whiteLabelConfigService.getConfiguration();
+    const { searchParams } = new URL(request.url);
+    const instanceId = searchParams.get('instanceId') || 'default';
+    
+    const config = await whiteLabelConfigService.getConfiguration(instanceId);
     
     if (!config) {
-      // Return default configuration if none exists
-      const defaultConfig = await whiteLabelConfigService.getDefaultConfiguration();
-      return NextResponse.json(defaultConfig);
+      // Return default demo configuration if none exists
+      const demoConfig = {
+        instanceId,
+        branding: {
+          primaryColor: '#3B82F6',
+          secondaryColor: '#1F2937',
+          accentColor: '#10B981',
+          logo: '',
+          favicon: '',
+          companyName: 'Demo Company',
+          tagline: 'Gamification Made Simple'
+        },
+        features: {
+          ranking: true,
+          dashboards: {
+            carteira_i: true,
+            carteira_ii: true,
+            carteira_iii: false,
+            carteira_iv: false
+          },
+          history: true,
+          personalizedRanking: true
+        }
+      };
+      return NextResponse.json(demoConfig);
     }
     
     return NextResponse.json(config);
@@ -52,7 +77,7 @@ async function getHandler(request: NextRequest) {
 async function putHandler(
   request: NextRequest,
   context: any,
-  validatedData?: { body: z.infer<typeof updateConfigSchema> }
+  validatedData?: { body?: z.infer<typeof updateConfigSchema> }
 ) {
   try {
     if (!validatedData?.body) {
@@ -62,11 +87,61 @@ async function putHandler(
       );
     }
 
-    const updatedConfig = await whiteLabelConfigService.updateConfiguration(
-      validatedData.body
+    const { searchParams } = new URL(request.url);
+    const instanceId = searchParams.get('instanceId') || 'default';
+    
+    // Create a full configuration object with the updates
+    const existingConfig = await whiteLabelConfigService.getConfiguration(instanceId);
+    const fullConfig = {
+      instanceId,
+      branding: {
+        primaryColor: '#3B82F6',
+        secondaryColor: '#1F2937',
+        accentColor: '#10B981',
+        logo: '',
+        favicon: '',
+        companyName: 'Demo Company',
+        tagline: 'Gamification Made Simple',
+        ...existingConfig?.branding,
+        ...validatedData.body.branding
+      },
+      features: {
+        ranking: true,
+        dashboards: {
+          carteira_i: true,
+          carteira_ii: true,
+          carteira_iii: false,
+          carteira_iv: false
+        },
+        history: true,
+        personalizedRanking: true,
+        ...existingConfig?.features,
+        ...validatedData.body.features
+      },
+      funifierIntegration: existingConfig?.funifierIntegration || {
+        apiKey: '',
+        serverUrl: '',
+        authToken: '',
+        customCollections: []
+      },
+      createdAt: existingConfig?.createdAt || Date.now(),
+      updatedAt: Date.now()
+    };
+
+    const result = await whiteLabelConfigService.saveConfiguration(
+      instanceId,
+      fullConfig,
+      'api-user'
     );
     
-    return NextResponse.json(updatedConfig);
+    if (result.success) {
+      return NextResponse.json(result.configuration);
+    } else {
+      return NextResponse.json(
+        { error: 'Failed to update configuration', details: result.errors },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     return handleApiError(error, 'Failed to update white-label configuration');
   }
@@ -79,8 +154,19 @@ async function putHandler(
  */
 async function resetHandler(request: NextRequest) {
   try {
-    const defaultConfig = await whiteLabelConfigService.resetToDefaults();
-    return NextResponse.json(defaultConfig);
+    const { searchParams } = new URL(request.url);
+    const instanceId = searchParams.get('instanceId') || 'default';
+    
+    const result = await whiteLabelConfigService.resetConfiguration(instanceId, 'api-user');
+    
+    if (result.success) {
+      return NextResponse.json(result.configuration);
+    } else {
+      return NextResponse.json(
+        { error: 'Failed to reset configuration', details: result.errors },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     return handleApiError(error, 'Failed to reset white-label configuration');
   }

@@ -4,16 +4,8 @@ import { WhiteLabelConfigService } from '@/services/white-label-config.service';
 import { errorLogger } from '@/services/error-logger.service';
 import { withAuth } from '@/middleware/auth';
 
-export async function GET(request: NextRequest) {
+async function getHandler(request: NextRequest) {
   try {
-    // Validate authentication
-    const authResult = await requireAuth(request, ['admin']);
-    if (!authResult.success) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
     // Get query parameters
     const { searchParams } = request.nextUrl;
@@ -29,8 +21,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Initialize services
-    const configService = new WhiteLabelConfigService();
-    const errorLogger = new ErrorLoggerService();
+    const configService = WhiteLabelConfigService.getInstance();
     const deploymentService = new DeploymentAutomationService(
       automationConfig,
       configService,
@@ -51,6 +42,11 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Export handler with authentication middleware
+export async function GET(request: NextRequest) {
+  return withAuth(request, getHandler, { requireAdmin: true });
 }
 
 function getAutomationConfig(): AutomationConfig | null {

@@ -59,7 +59,7 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
     });
 
     // Auto-dismiss after duration
-    if (newToast.duration > 0) {
+    if (newToast.duration && newToast.duration > 0) {
       setTimeout(() => {
         dismissToast(newToast.id);
       }, newToast.duration);
