@@ -19,7 +19,7 @@ The deployment automation system provides:
 # Vercel API Configuration
 VERCEL_TOKEN=your_vercel_token_here
 VERCEL_PROJECT_ID=your_project_id_here
-VERCEL_TEAM_ID=your_team_id_here  # Optional
+VERCEL_TEAM_ID=your_team_id_here  
 
 # GitHub Integration (Optional)
 GITHUB_REPO=username/repository-name
