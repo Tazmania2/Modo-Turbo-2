@@ -31,10 +31,34 @@ async function loginHandler(
     const instanceId = searchParams.get('instance') || 'default';
     
     // Get Funifier credentials from white-label config
+    console.log(`Login attempt for instance: ${instanceId}`);
     const config = await whiteLabelConfigService.getConfiguration(instanceId);
-    if (!config?.funifierIntegration) {
+    console.log('Retrieved configuration:', config ? 'Found' : 'Not found');
+    
+    if (!config) {
+      console.error(`No configuration found for instance: ${instanceId}`);
       return NextResponse.json(
-        { error: 'Funifier integration not configured' },
+        { error: 'System configuration error. Please contact your administrator.' },
+        { status: 500 }
+      );
+    }
+    
+    if (!config.funifierIntegration) {
+      console.error(`No Funifier integration found for instance: ${instanceId}`);
+      return NextResponse.json(
+        { error: 'System configuration error. Please contact your administrator.' },
+        { status: 500 }
+      );
+    }
+    
+    if (!config.funifierIntegration.apiKey || !config.funifierIntegration.serverUrl || !config.funifierIntegration.authToken) {
+      console.error(`Incomplete Funifier credentials for instance: ${instanceId}`, {
+        hasApiKey: !!config.funifierIntegration.apiKey,
+        hasServerUrl: !!config.funifierIntegration.serverUrl,
+        hasAuthToken: !!config.funifierIntegration.authToken
+      });
+      return NextResponse.json(
+        { error: 'System configuration error. Please contact your administrator.' },
         { status: 500 }
       );
     }
@@ -46,48 +70,68 @@ async function loginHandler(
       authToken: config.funifierIntegration.authToken,
     };
 
-    funifierAuthService.initialize(credentials);
+    console.log('Initializing Funifier auth service with credentials...');
+    try {
+      funifierAuthService.initialize(credentials);
+    } catch (initError) {
+      console.error('Failed to initialize Funifier auth service:', initError);
+      return NextResponse.json(
+        { error: 'System configuration error. Please contact your administrator.' },
+        { status: 500 }
+      );
+    }
 
     // Attempt login with context
-    const authResponse = await funifierAuthService.login(
-      {
-        username,
-        password,
-      },
-      {
-        userAgent: request.headers.get('user-agent') || 'unknown',
-        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-      }
-    );
+    console.log(`Attempting Funifier login for user: ${username}`);
+    try {
+      const authResponse = await funifierAuthService.login(
+        {
+          username,
+          password,
+        },
+        {
+          userAgent: request.headers.get('user-agent') || 'unknown',
+          ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        }
+      );
+      
+      console.log('Funifier login successful');
+      
+      // Create session cookie
+      const response = NextResponse.json({
+        success: true,
+        user: authResponse.user,
+        expires_in: authResponse.expires_in,
+      });
 
-    // Create session cookie
-    const response = NextResponse.json({
-      success: true,
-      user: authResponse.user,
-      expires_in: authResponse.expires_in,
-    });
-
-    // Set HTTP-only cookie with access token
-    response.cookies.set('auth_token', authResponse.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: authResponse.expires_in,
-      path: '/',
-    });
-
-    // Set refresh token if available
-    if (authResponse.refresh_token) {
-      response.cookies.set('refresh_token', authResponse.refresh_token, {
+      // Set HTTP-only cookie with access token
+      response.cookies.set('auth_token', authResponse.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60, // 7 days
+        maxAge: authResponse.expires_in,
         path: '/',
       });
-    }
 
-    return response;
+      // Set refresh token if available
+      if (authResponse.refresh_token) {
+        response.cookies.set('refresh_token', authResponse.refresh_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60, // 7 days
+          path: '/',
+        });
+      }
+
+      return response;
+    } catch (loginError) {
+      console.error('Funifier login failed:', loginError);
+      return NextResponse.json(
+        { error: loginError instanceof Error ? loginError.message : 'Login failed' },
+        { status: 401 }
+      );
+    }
   } catch (error) {
     return handleApiError(error, 'Login failed');
   }
