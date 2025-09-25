@@ -215,7 +215,7 @@ export class SetupService {
       // Generate a unique instance ID if not provided
       const actualInstanceId = instanceId || this.generateInstanceId();
 
-      // For demo mode, we don't need to save to database or encrypt anything
+      // For demo mode, we don't need to save to database
       // Just return success with the instance ID
       return {
         success: true,
@@ -246,6 +246,16 @@ export class SetupService {
 
       // Generate a unique instance ID if not provided
       const actualInstanceId = instanceId || this.generateInstanceId();
+
+      // Initialize the Funifier API client with credentials first
+      funifierAuthService.initialize({
+        apiKey: credentials.apiKey,
+        serverUrl: credentials.serverUrl,
+        authToken: credentials.authToken,
+      });
+
+      // Initialize the white-label collection
+      await whiteLabelConfigService.initializeCollection();
 
       // Use the white-label config service to handle Funifier setup
       const setupResult = await whiteLabelConfigService.handleSetup({

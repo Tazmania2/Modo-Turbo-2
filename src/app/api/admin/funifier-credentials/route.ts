@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     
     if (!config) {
       return NextResponse.json(
-        { hasCredentials: false, serverUrl: 'https://service2.funifier.com' },
+        { hasCredentials: false, serverUrl: 'https://service2.funifier.com/v3' },
         { status: 200 }
       );
     }
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       hasCredentials,
-      serverUrl: config.funifierIntegration?.serverUrl || 'https://service2.funifier.com'
+      serverUrl: config.funifierIntegration?.serverUrl || 'https://service2.funifier.com/v3'
     });
 
   } catch (error) {

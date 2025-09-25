@@ -29,7 +29,7 @@ interface ValidationResult {
 export function FunifierCredentialsPanel({ instanceId, userId }: FunifierCredentialsPanelProps) {
   const [formData, setFormData] = useState<CredentialsFormData>({
     apiKey: '',
-    serverUrl: 'https://service2.funifier.com',
+    serverUrl: 'https://service2.funifier.com/v3',
     authToken: ''
   });
   
@@ -60,7 +60,7 @@ export function FunifierCredentialsPanel({ instanceId, userId }: FunifierCredent
           setHasExistingCredentials(true);
           setFormData({
             apiKey: '••••••••••••••••', // Masked for security
-            serverUrl: data.serverUrl || 'https://service2.funifier.com',
+            serverUrl: data.serverUrl || 'https://service2.funifier.com/v3',
             authToken: '••••••••••••••••' // Masked for security
           });
         }
@@ -175,7 +175,7 @@ export function FunifierCredentialsPanel({ instanceId, userId }: FunifierCredent
   const resetCredentials = () => {
     setFormData({
       apiKey: '',
-      serverUrl: 'https://service2.funifier.com',
+      serverUrl: 'https://service2.funifier.com/v3',
       authToken: ''
     });
     setShowCredentials({ apiKey: false, authToken: false });
@@ -372,7 +372,7 @@ export function FunifierCredentialsPanel({ instanceId, userId }: FunifierCredent
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
                     handleInputChange('serverUrl', e.target.value)
                   }
-                  placeholder="https://service2.funifier.com"
+                  placeholder="https://service2.funifier.com/v3"
                   className="pl-10"
                 />
               </div>

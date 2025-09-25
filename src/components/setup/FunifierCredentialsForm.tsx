@@ -15,7 +15,7 @@ export interface FunifierCredentialsFormProps {
 export function FunifierCredentialsForm({ onSubmit, onBack, isLoading = false }: FunifierCredentialsFormProps) {
   const [formData, setFormData] = useState({
     apiKey: '',
-    serverUrl: 'https://service2.funifier.com',
+    serverUrl: 'https://service2.funifier.com/v3',
     authToken: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -153,7 +153,7 @@ export function FunifierCredentialsForm({ onSubmit, onBack, isLoading = false }:
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.serverUrl ? 'border-red-300' : 'border-gray-300'
               }`}
-              placeholder="https://service2.funifier.com"
+              placeholder="https://service2.funifier.com/v3"
               disabled={isLoading}
             />
             {errors.serverUrl && (

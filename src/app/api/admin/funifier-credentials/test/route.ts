@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       // Test the connection
       const isValid = await funifierAuthService.validateCredentials({
         apiKey: decryptedApiKey,
-        serverUrl: serverUrl || 'https://service2.funifier.com',
+        serverUrl: serverUrl || 'https://service2.funifier.com/v3',
         authToken: decryptedAuthToken
       });
 
