@@ -1,4 +1,6 @@
 import { SetupRequest } from '@/types/funifier';
+import { whiteLabelConfigService } from './white-label-config.service';
+import { funifierAuthService } from './funifier-auth.service';
 import { demoDataService } from './demo-data.service';
 
 export interface SetupResult {
@@ -24,7 +26,7 @@ export interface CredentialsValidationResult {
 export class SetupService {
   private static instance: SetupService;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): SetupService {
     if (!SetupService.instance) {
@@ -131,9 +133,8 @@ export class SetupService {
         return true; // No instance ID means fresh setup
       }
 
-      // For now, always return true since we're not persisting configurations
-      // In a full implementation, this would check the database
-      return true;
+      const config = await whiteLabelConfigService.getConfiguration(instanceId);
+      return !config; // No configuration means setup needed
     } catch (error) {
       console.error('Error checking setup status:', error);
       return true; // Assume setup needed on error
@@ -155,14 +156,21 @@ export class SetupService {
   /**
    * Reset system to initial setup state
    */
-  async resetToSetup(instanceId: string, _userId: string): Promise<SetupResult> {
+  async resetToSetup(instanceId: string, userId: string): Promise<SetupResult> {
     try {
-      // For now, always return success since we're not persisting configurations
-      // In a full implementation, this would delete the configuration from database
-      return {
-        success: true,
-        redirectUrl: '/setup'
-      };
+      const deleteResult = await whiteLabelConfigService.deleteConfiguration(instanceId);
+
+      if (deleteResult) {
+        return {
+          success: true,
+          redirectUrl: '/setup'
+        };
+      } else {
+        return {
+          success: false,
+          errors: ['Failed to reset configuration']
+        };
+      }
     } catch (error) {
       return {
         success: false,
@@ -185,11 +193,11 @@ export class SetupService {
         errors.push('Funifier credentials are required for Funifier mode');
       } else {
         const { apiKey, serverUrl, authToken } = request.funifierCredentials;
-        
+
         if (!apiKey) errors.push('API Key is required');
         if (!serverUrl) errors.push('Server URL is required');
         if (!authToken) errors.push('Auth Token is required');
-        
+
         if (serverUrl && !serverUrl.startsWith('http')) {
           errors.push('Server URL must start with http:// or https://');
         }
@@ -315,10 +323,10 @@ export class SetupService {
     apiKey: string;
     serverUrl: string;
     authToken: string;
-  }): Promise<{ 
-    success: boolean; 
-    errors?: string[]; 
-    userInfo?: { name: string; isAdmin: boolean; roles: string[] } 
+  }): Promise<{
+    success: boolean;
+    errors?: string[];
+    userInfo?: { name: string; isAdmin: boolean; roles: string[] }
   }> {
     try {
       // This would normally check admin privileges via Funifier API
