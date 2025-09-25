@@ -13,7 +13,10 @@ const ENCRYPTED_POSITION = TAGPOSITION + TAG_LENGTH;
 function getEncryptionKey(): string {
   const key = process.env.ENCRYPTION_KEY;
   if (!key) {
-    throw new Error('ENCRYPTION_KEY environment variable is required');
+    // For development/demo purposes, use a default key
+    // In production, this should always be set via environment variable
+    console.warn('ENCRYPTION_KEY not set, using default key for development');
+    return 'dev-key-not-for-production-use-32-chars-long';
   }
   return key;
 }

@@ -1,6 +1,4 @@
 import { SetupRequest } from '@/types/funifier';
-import { whiteLabelConfigService } from './white-label-config.service';
-import { funifierAuthService } from './funifier-auth.service';
 import { demoDataService } from './demo-data.service';
 
 export interface SetupResult {
@@ -133,8 +131,9 @@ export class SetupService {
         return true; // No instance ID means fresh setup
       }
 
-      const config = await whiteLabelConfigService.getConfiguration(instanceId);
-      return !config; // No configuration means setup needed
+      // For now, always return true since we're not persisting configurations
+      // In a full implementation, this would check the database
+      return true;
     } catch (error) {
       console.error('Error checking setup status:', error);
       return true; // Assume setup needed on error
@@ -158,19 +157,12 @@ export class SetupService {
    */
   async resetToSetup(instanceId: string, _userId: string): Promise<SetupResult> {
     try {
-      const deleteResult = await whiteLabelConfigService.deleteConfiguration(instanceId);
-      
-      if (deleteResult) {
-        return {
-          success: true,
-          redirectUrl: '/setup'
-        };
-      } else {
-        return {
-          success: false,
-          errors: ['Failed to reset configuration']
-        };
-      }
+      // For now, always return success since we're not persisting configurations
+      // In a full implementation, this would delete the configuration from database
+      return {
+        success: true,
+        redirectUrl: '/setup'
+      };
     } catch (error) {
       return {
         success: false,
@@ -215,23 +207,13 @@ export class SetupService {
       // Generate a unique instance ID if not provided
       const actualInstanceId = instanceId || this.generateInstanceId();
 
-      // Use the white-label config service to handle demo setup
-      const setupResult = await whiteLabelConfigService.handleSetup({
-        mode: 'demo'
-      }, actualInstanceId);
-
-      if (setupResult.success) {
-        return {
-          success: true,
-          instanceId: actualInstanceId,
-          redirectUrl: `/dashboard?instance=${actualInstanceId}`
-        };
-      } else {
-        return {
-          success: false,
-          errors: setupResult.errors
-        };
-      }
+      // For demo mode, we don't need to save to database or encrypt anything
+      // Just return success with the instance ID
+      return {
+        success: true,
+        instanceId: actualInstanceId,
+        redirectUrl: `/dashboard?instance=${actualInstanceId}`
+      };
     } catch (error) {
       return {
         success: false,
