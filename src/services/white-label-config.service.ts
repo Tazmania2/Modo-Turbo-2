@@ -8,6 +8,7 @@ import {
   WhiteLabelFunifierIntegration
 } from '@/types/funifier';
 import { funifierDatabaseService } from './funifier-database.service';
+import { funifierAuthService } from './funifier-auth.service';
 import { encrypt, decrypt, hash, generateSecureToken } from '@/utils/encryption';
 import { 
   validateWhiteLabelConfiguration, 
@@ -497,14 +498,21 @@ export class WhiteLabelConfigService {
 
   private async testFunifierConnection(credentials: { apiKey: string; serverUrl: string; authToken: string }): Promise<{ success: boolean; error?: string }> {
     try {
-      // This would test the actual Funifier connection
-      // For now, we'll do basic validation
-      if (!credentials.apiKey || !credentials.serverUrl || !credentials.authToken) {
-        return { success: false, error: 'Missing required credentials' };
+      // Test the connection using the auth service
+      const isValid = await funifierAuthService.validateCredentials({
+        apiKey: credentials.apiKey,
+        serverUrl: credentials.serverUrl,
+        authToken: credentials.authToken,
+      });
+
+      if (isValid) {
+        return { success: true };
       }
 
-      // In a real implementation, this would make a test API call to Funifier
-      return { success: true };
+      return { 
+        success: false, 
+        error: 'Failed to connect to Funifier with provided credentials' 
+      };
     } catch (error) {
       return { 
         success: false, 

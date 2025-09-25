@@ -45,7 +45,7 @@ export class FunifierDatabaseService {
    */
   async createCollection(collectionName: string): Promise<void> {
     try {
-      await funifierApiClient.post(`/v3/database/${collectionName}/create`);
+      await funifierApiClient.post(`/database/${collectionName}/create`);
     } catch (error) {
       throw error;
     }
@@ -56,7 +56,7 @@ export class FunifierDatabaseService {
    */
   async collectionExists(collectionName: string): Promise<boolean> {
     try {
-      await funifierApiClient.get(`/v3/database/${collectionName}/info`);
+      await funifierApiClient.get(`/database/${collectionName}/info`);
       return true;
     } catch (error) {
       return false;
@@ -72,7 +72,7 @@ export class FunifierDatabaseService {
   ): Promise<DatabaseInsertResult> {
     try {
       const result = await funifierApiClient.post<DatabaseInsertResult>(
-        `/v3/database/${collectionName}`,
+        `/database/${collectionName}`,
         document
       );
       return result;
@@ -90,7 +90,7 @@ export class FunifierDatabaseService {
   ): Promise<DatabaseInsertResult[]> {
     try {
       const result = await funifierApiClient.post<DatabaseInsertResult[]>(
-        `/v3/database/${collectionName}/many`,
+        `/database/${collectionName}/many`,
         { documents }
       );
       return result;
@@ -108,7 +108,7 @@ export class FunifierDatabaseService {
   ): Promise<T[]> {
     try {
       const result = await funifierApiClient.post<T[]>(
-        `/v3/database/${collectionName}/find`,
+        `/database/${collectionName}/find`,
         query
       );
       return result;
@@ -126,7 +126,7 @@ export class FunifierDatabaseService {
   ): Promise<T | null> {
     try {
       const result = await funifierApiClient.get<T>(
-        `/v3/database/${collectionName}/${id}`
+        `/database/${collectionName}/${id}`
       );
       return result;
     } catch (error) {
@@ -166,7 +166,7 @@ export class FunifierDatabaseService {
   ): Promise<DatabaseUpdateResult> {
     try {
       const result = await funifierApiClient.put<DatabaseUpdateResult>(
-        `/v3/database/${collectionName}/${id}`,
+        `/database/${collectionName}/${id}`,
         update
       );
       return result;
@@ -185,7 +185,7 @@ export class FunifierDatabaseService {
   ): Promise<DatabaseUpdateResult> {
     try {
       const result = await funifierApiClient.put<DatabaseUpdateResult>(
-        `/v3/database/${collectionName}/many`,
+        `/database/${collectionName}/many`,
         { filter, update }
       );
       return result;
@@ -204,7 +204,7 @@ export class FunifierDatabaseService {
   ): Promise<DatabaseUpdateResult> {
     try {
       const result = await funifierApiClient.put<DatabaseUpdateResult>(
-        `/v3/database/${collectionName}/${id}/replace`,
+        `/database/${collectionName}/${id}/replace`,
         document
       );
       return result;
@@ -219,7 +219,7 @@ export class FunifierDatabaseService {
   async deleteById(collectionName: string, id: string): Promise<DatabaseDeleteResult> {
     try {
       const result = await funifierApiClient.delete<DatabaseDeleteResult>(
-        `/v3/database/${collectionName}/${id}`
+        `/database/${collectionName}/${id}`
       );
       return result;
     } catch (error) {
@@ -236,7 +236,7 @@ export class FunifierDatabaseService {
   ): Promise<DatabaseDeleteResult> {
     try {
       const result = await funifierApiClient.delete<DatabaseDeleteResult>(
-        `/v3/database/${collectionName}/many`,
+        `/database/${collectionName}/many`,
         { data: { filter } }
       );
       return result;
@@ -254,7 +254,7 @@ export class FunifierDatabaseService {
   ): Promise<T[]> {
     try {
       const result = await funifierApiClient.post<T[]>(
-        `/v3/database/${collectionName}/aggregate`,
+        `/database/${collectionName}/aggregate`,
         { pipeline }
       );
       return result;
@@ -269,7 +269,7 @@ export class FunifierDatabaseService {
   async count(collectionName: string, filter: Record<string, unknown> = {}): Promise<number> {
     try {
       const result = await funifierApiClient.post<{ count: number }>(
-        `/v3/database/${collectionName}/count`,
+        `/database/${collectionName}/count`,
         { filter }
       );
       return result.count;
@@ -284,7 +284,7 @@ export class FunifierDatabaseService {
   async getCollectionStats(collectionName: string): Promise<Record<string, unknown>> {
     try {
       const result = await funifierApiClient.get<Record<string, unknown>>(
-        `/v3/database/${collectionName}/stats`
+        `/database/${collectionName}/stats`
       );
       return result;
     } catch (error) {
@@ -297,7 +297,7 @@ export class FunifierDatabaseService {
    */
   async dropCollection(collectionName: string): Promise<void> {
     try {
-      await funifierApiClient.delete(`/v3/database/${collectionName}`);
+      await funifierApiClient.delete(`/database/${collectionName}`);
     } catch (error) {
       throw error;
     }
@@ -308,7 +308,7 @@ export class FunifierDatabaseService {
    */
   async listCollections(): Promise<string[]> {
     try {
-      const result = await funifierApiClient.get<{ collections: string[] }>('/v3/database');
+      const result = await funifierApiClient.get<{ collections: string[] }>('/database');
       return result.collections;
     } catch (error) {
       throw error;
@@ -324,7 +324,7 @@ export class FunifierDatabaseService {
     options?: Record<string, unknown>
   ): Promise<void> {
     try {
-      await funifierApiClient.post(`/v3/database/${collectionName}/index`, {
+      await funifierApiClient.post(`/database/${collectionName}/index`, {
         keys,
         options,
       });
@@ -343,7 +343,7 @@ export class FunifierDatabaseService {
   ): Promise<DatabaseUpdateResult> {
     try {
       const result = await funifierApiClient.post<DatabaseUpdateResult>(
-        `/v3/database/${collectionName}/upsert`,
+        `/database/${collectionName}/upsert`,
         { filter, document }
       );
       return result;

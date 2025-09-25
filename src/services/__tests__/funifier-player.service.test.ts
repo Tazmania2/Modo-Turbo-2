@@ -55,7 +55,7 @@ describe('FunifierPlayerService', () => {
 
       const result = await playerService.getPlayerStatus('player123');
 
-      expect(funifierApiClient.get).toHaveBeenCalledWith('/v3/player/player123/status');
+      expect(funifierApiClient.get).toHaveBeenCalledWith('/player/player123/status');
       expect(result).toEqual(mockPlayer);
     });
   });
@@ -84,7 +84,7 @@ describe('FunifierPlayerService', () => {
 
       const results = await playerService.searchPlayers(query);
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/player/search', query);
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/player/search', query);
       expect(results).toEqual(mockPlayers);
     });
   });
@@ -112,7 +112,7 @@ describe('FunifierPlayerService', () => {
 
       const results = await playerService.getLeaderboards();
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/leaderboard', {});
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/leaderboard', {});
       expect(results).toEqual(mockLeaderboards);
     });
 
@@ -132,7 +132,7 @@ describe('FunifierPlayerService', () => {
 
       const results = await playerService.getLeaderboards(query);
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/leaderboard', query);
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/leaderboard', query);
       expect(results).toEqual(mockLeaderboards);
     });
   });
@@ -162,7 +162,7 @@ describe('FunifierPlayerService', () => {
       const results = await playerService.getLeaders(query);
 
       expect(funifierApiClient.post).toHaveBeenCalledWith(
-        '/v3/leaderboard/leaderboard1/leader',
+        '/leaderboard/leaderboard1/leader',
         { limit: 10 }
       );
       expect(results).toEqual(mockLeaders);
@@ -184,7 +184,7 @@ describe('FunifierPlayerService', () => {
       const result = await playerService.getPlayerPosition('leaderboard1', 'player1');
 
       expect(funifierApiClient.get).toHaveBeenCalledWith(
-        '/v3/leaderboard/leaderboard1/leader/player1'
+        '/leaderboard/leaderboard1/leader/player1'
       );
       expect(result).toEqual(mockPosition);
     });

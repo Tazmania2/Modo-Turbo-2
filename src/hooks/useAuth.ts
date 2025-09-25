@@ -15,7 +15,7 @@ export interface LoginCredentials {
 }
 
 export interface UseAuthReturn extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials, instanceId?: string | null) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
   verifyAdmin: () => Promise<boolean>;
@@ -92,11 +92,16 @@ export function useAuth(): UseAuthReturn {
   /**
    * Login with credentials
    */
-  const login = useCallback(async (credentials: LoginCredentials) => {
+  const login = useCallback(async (credentials: LoginCredentials, instanceId?: string | null) => {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
 
-      const response = await fetch('/api/auth/login', {
+      // Build URL with instance parameter if provided
+      const url = instanceId 
+        ? `/api/auth/login?instance=${encodeURIComponent(instanceId)}`
+        : '/api/auth/login';
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -25,7 +25,7 @@ export class FunifierApiClient {
 
   constructor(baseURL?: string) {
     this.axiosInstance = axios.create({
-      baseURL: baseURL || 'https://service2.funifier.com',
+      baseURL: baseURL || 'https://service2.funifier.com/v3',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -55,7 +55,11 @@ export class FunifierApiClient {
   setCredentials(credentials: FunifierCredentials): void {
     this.credentials = credentials;
     if (credentials.serverUrl) {
-      this.axiosInstance.defaults.baseURL = credentials.serverUrl;
+      // Ensure the server URL includes /v3 if not already present
+      const baseUrl = credentials.serverUrl.endsWith('/v3') 
+        ? credentials.serverUrl 
+        : `${credentials.serverUrl.replace(/\/$/, '')}/v3`;
+      this.axiosInstance.defaults.baseURL = baseUrl;
     }
   }
 
@@ -181,7 +185,7 @@ export class FunifierApiClient {
     try {
       // Use a lightweight endpoint to check connectivity
       // If no specific health endpoint exists, we can use a simple API call
-      const response = await this.get<any>('/v3/health', { timeout: 5000 });
+      const response = await this.get<any>('/health', { timeout: 5000 });
       return {
         status: 'ok',
         timestamp: new Date().toISOString(),
@@ -189,7 +193,7 @@ export class FunifierApiClient {
     } catch (error) {
       // If health endpoint doesn't exist, try a basic endpoint
       try {
-        await this.get<any>('/v3/version', { timeout: 5000 });
+        await this.get<any>('/version', { timeout: 5000 });
         return {
           status: 'ok',
           timestamp: new Date().toISOString(),

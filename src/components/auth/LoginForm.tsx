@@ -31,8 +31,12 @@ export function LoginForm({
     setError(null);
 
     try {
+      // Get instance ID from URL if available
+      const urlParams = new URLSearchParams(window.location.search);
+      const instanceId = urlParams.get('instance');
+      
       // Attempt login
-      await login(credentials);
+      await login(credentials, instanceId);
 
       // Verify admin role if required
       if (requireAdmin) {

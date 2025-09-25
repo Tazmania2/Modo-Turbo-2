@@ -48,7 +48,7 @@ describe('RankingLeaderboardService', () => {
 
       const result = await service.getLeaderboards();
 
-      expect(mockGet).toHaveBeenCalledWith('/v3/leaderboard');
+      expect(mockGet).toHaveBeenCalledWith('/leaderboard');
       expect(result.leaderboards).toHaveLength(1);
       expect(result.leaderboards[0]).toMatchObject({
         _id: 'lb1',
@@ -91,7 +91,7 @@ describe('RankingLeaderboardService', () => {
 
       const result = await service.getLeaderboardData('lb1');
 
-      expect(mockGet).toHaveBeenCalledWith('/v3/leaderboard/lb1');
+      expect(mockGet).toHaveBeenCalledWith('/leaderboard/lb1');
       expect(result).toEqual(mockLeaderboard);
     });
   });
@@ -119,7 +119,7 @@ describe('RankingLeaderboardService', () => {
 
       const result = await service.getLeaderboardAggregate('lb1', query);
 
-      expect(mockPost).toHaveBeenCalledWith('/v3/leaderboard/lb1/leader/aggregate', query);
+      expect(mockPost).toHaveBeenCalledWith('/leaderboard/lb1/leader/aggregate', query);
       expect(result).toEqual(mockLeaders);
     });
   });

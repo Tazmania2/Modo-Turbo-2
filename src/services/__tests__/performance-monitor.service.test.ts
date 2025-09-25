@@ -80,7 +80,7 @@ describe('PerformanceMonitorService', () => {
 
   describe('Funifier API metrics', () => {
     it('should record Funifier requests', () => {
-      performanceMonitor.recordFunifierRequest('/v3/player/123', 'GET', 300);
+      performanceMonitor.recordFunifierRequest('/player/123', 'GET', 300);
 
       const metrics = performanceMonitor.getMetrics();
       expect(metrics.funifierRequestCount).toBe(1);
@@ -88,7 +88,7 @@ describe('PerformanceMonitorService', () => {
     });
 
     it('should record Funifier errors', () => {
-      performanceMonitor.recordFunifierRequest('/v3/player/123', 'GET', 500, 'timeout');
+      performanceMonitor.recordFunifierRequest('/player/123', 'GET', 500, 'timeout');
 
       const metrics = performanceMonitor.getMetrics();
       expect(metrics.funifierErrorCount).toBe(1);

@@ -26,9 +26,12 @@ async function loginHandler(
 
     const { username, password } = validatedData.body;
 
+    // Get instance ID from query params or use default
+    const { searchParams } = new URL(request.url);
+    const instanceId = searchParams.get('instance') || 'default';
+    
     // Get Funifier credentials from white-label config
-    // For now, we'll use a default instance ID. In production, this should come from the request
-    const config = await whiteLabelConfigService.getConfiguration('default');
+    const config = await whiteLabelConfigService.getConfiguration(instanceId);
     if (!config?.funifierIntegration) {
       return NextResponse.json(
         { error: 'Funifier integration not configured' },

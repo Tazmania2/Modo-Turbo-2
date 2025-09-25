@@ -64,7 +64,7 @@ describe('FunifierAuthService', () => {
 
       const result = await authService.login(loginRequest);
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/auth/login', loginRequest);
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/auth/login', loginRequest);
       expect(funifierApiClient.setAccessToken).toHaveBeenCalledWith('test-access-token', 3600);
       expect(result).toEqual(mockResponse);
     });
@@ -154,7 +154,7 @@ describe('FunifierAuthService', () => {
       vi.mocked(funifierApiClient.post).mockResolvedValue({});
       await authService.logout();
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/auth/logout');
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/auth/logout');
       expect(authService.isAuthenticated()).toBe(false);
     });
   });

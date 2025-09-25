@@ -264,6 +264,23 @@ export class SetupService {
       }, actualInstanceId);
 
       if (setupResult.success) {
+        // Optional: Auto-trigger deployment after successful setup
+        // Uncomment the following lines to enable auto-deployment
+        /*
+        try {
+          const deploymentService = createDeploymentAutomationService(
+            getAutomationConfig(),
+            whiteLabelConfigService,
+            errorLogger
+          );
+          
+          await deploymentService.triggerAutomatedDeployment(actualInstanceId);
+        } catch (deploymentError) {
+          console.warn('Auto-deployment failed:', deploymentError);
+          // Continue with setup success even if deployment fails
+        }
+        */
+
         return {
           success: true,
           instanceId: actualInstanceId,
@@ -289,17 +306,20 @@ export class SetupService {
     authToken: string;
   }): Promise<{ success: boolean; errors?: string[] }> {
     try {
-      // Test the connection (would normally use funifierAuthService)
-      
-      // This would normally test the actual connection
-      // For now, we'll do basic validation and assume success if credentials are provided
-      if (credentials.apiKey && credentials.serverUrl && credentials.authToken) {
+      // Test the connection using the auth service
+      const isValid = await funifierAuthService.validateCredentials({
+        apiKey: credentials.apiKey,
+        serverUrl: credentials.serverUrl,
+        authToken: credentials.authToken,
+      });
+
+      if (isValid) {
         return { success: true };
       }
 
       return {
         success: false,
-        errors: ['Invalid credentials provided']
+        errors: ['Failed to connect to Funifier with provided credentials']
       };
     } catch (error) {
       return {

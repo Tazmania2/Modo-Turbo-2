@@ -34,7 +34,7 @@ describe('FunifierDatabaseService', () => {
 
       await databaseService.createCollection('test_collection');
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/database/test_collection/create');
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/database/test_collection/create');
     });
   });
 
@@ -45,7 +45,7 @@ describe('FunifierDatabaseService', () => {
       const exists = await databaseService.collectionExists('test_collection');
 
       expect(exists).toBe(true);
-      expect(funifierApiClient.get).toHaveBeenCalledWith('/v3/database/test_collection/info');
+      expect(funifierApiClient.get).toHaveBeenCalledWith('/database/test_collection/info');
     });
 
     it('should return false if collection does not exist', async () => {
@@ -66,7 +66,7 @@ describe('FunifierDatabaseService', () => {
 
       const result = await databaseService.insertOne('test_collection', document);
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/database/test_collection', document);
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/database/test_collection', document);
       expect(result).toEqual(mockResult);
     });
   });
@@ -83,7 +83,7 @@ describe('FunifierDatabaseService', () => {
 
       const results = await databaseService.find('test_collection', query);
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/database/test_collection/find', query);
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/database/test_collection/find', query);
       expect(results).toEqual(mockResults);
     });
 
@@ -94,7 +94,7 @@ describe('FunifierDatabaseService', () => {
 
       const results = await databaseService.find('test_collection');
 
-      expect(funifierApiClient.post).toHaveBeenCalledWith('/v3/database/test_collection/find', {});
+      expect(funifierApiClient.post).toHaveBeenCalledWith('/database/test_collection/find', {});
       expect(results).toEqual(mockResults);
     });
   });
@@ -107,7 +107,7 @@ describe('FunifierDatabaseService', () => {
 
       const result = await databaseService.findById('test_collection', 'doc123');
 
-      expect(funifierApiClient.get).toHaveBeenCalledWith('/v3/database/test_collection/doc123');
+      expect(funifierApiClient.get).toHaveBeenCalledWith('/database/test_collection/doc123');
       expect(result).toEqual(mockDocument);
     });
 
@@ -132,7 +132,7 @@ describe('FunifierDatabaseService', () => {
 
       const result = await databaseService.updateById('test_collection', 'doc123', update);
 
-      expect(funifierApiClient.put).toHaveBeenCalledWith('/v3/database/test_collection/doc123', update);
+      expect(funifierApiClient.put).toHaveBeenCalledWith('/database/test_collection/doc123', update);
       expect(result).toEqual(mockResult);
     });
   });
@@ -145,7 +145,7 @@ describe('FunifierDatabaseService', () => {
 
       const result = await databaseService.deleteById('test_collection', 'doc123');
 
-      expect(funifierApiClient.delete).toHaveBeenCalledWith('/v3/database/test_collection/doc123');
+      expect(funifierApiClient.delete).toHaveBeenCalledWith('/database/test_collection/doc123');
       expect(result).toEqual(mockResult);
     });
   });
@@ -166,7 +166,7 @@ describe('FunifierDatabaseService', () => {
       const results = await databaseService.aggregate('test_collection', pipeline);
 
       expect(funifierApiClient.post).toHaveBeenCalledWith(
-        '/v3/database/test_collection/aggregate',
+        '/database/test_collection/aggregate',
         { pipeline }
       );
       expect(results).toEqual(mockResults);
@@ -183,7 +183,7 @@ describe('FunifierDatabaseService', () => {
       const count = await databaseService.count('test_collection', filter);
 
       expect(funifierApiClient.post).toHaveBeenCalledWith(
-        '/v3/database/test_collection/count',
+        '/database/test_collection/count',
         { filter }
       );
       expect(count).toBe(42);

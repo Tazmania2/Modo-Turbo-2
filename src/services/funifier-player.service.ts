@@ -59,7 +59,7 @@ export class FunifierPlayerService {
   async getPlayerStatus(playerId: string): Promise<FunifierPlayerStatus> {
     try {
       const result = await funifierApiClient.get<FunifierPlayerStatus>(
-        `/v3/player/${playerId}/status`
+        `/player/${playerId}/status`
       );
       return result;
     } catch (error) {
@@ -73,7 +73,7 @@ export class FunifierPlayerService {
   async getPlayersStatus(playerIds: string[]): Promise<FunifierPlayerStatus[]> {
     try {
       const result = await funifierApiClient.post<FunifierPlayerStatus[]>(
-        '/v3/player/status/batch',
+        '/player/status/batch',
         { playerIds }
       );
       return result;
@@ -88,7 +88,7 @@ export class FunifierPlayerService {
   async searchPlayers(query: PlayerSearchQuery): Promise<FunifierPlayerStatus[]> {
     try {
       const result = await funifierApiClient.post<FunifierPlayerStatus[]>(
-        '/v3/player/search',
+        '/player/search',
         query
       );
       return result;
@@ -115,7 +115,7 @@ export class FunifierPlayerService {
   async getLeaderboards(query: LeaderboardQuery = {}): Promise<FunifierLeaderboard[]> {
     try {
       const result = await funifierApiClient.post<FunifierLeaderboard[]>(
-        '/v3/leaderboard',
+        '/leaderboard',
         query
       );
       return result;
@@ -130,7 +130,7 @@ export class FunifierPlayerService {
   async getLeaderboard(leaderboardId: string): Promise<FunifierLeaderboard> {
     try {
       const result = await funifierApiClient.get<FunifierLeaderboard>(
-        `/v3/leaderboard/${leaderboardId}`
+        `/leaderboard/${leaderboardId}`
       );
       return result;
     } catch (error) {
@@ -145,7 +145,7 @@ export class FunifierPlayerService {
     try {
       const { leaderboardId, ...params } = query;
       const result = await funifierApiClient.post<FunifierLeader[]>(
-        `/v3/leaderboard/${leaderboardId}/leader`,
+        `/leaderboard/${leaderboardId}/leader`,
         params
       );
       return result;
@@ -163,7 +163,7 @@ export class FunifierPlayerService {
   ): Promise<FunifierLeader[]> {
     try {
       const result = await funifierApiClient.post<FunifierLeader[]>(
-        `/v3/leaderboard/${leaderboardId}/leader/aggregate`,
+        `/leaderboard/${leaderboardId}/leader/aggregate`,
         { pipeline }
       );
       return result;
@@ -178,7 +178,7 @@ export class FunifierPlayerService {
   async getPlayerPosition(leaderboardId: string, playerId: string): Promise<FunifierLeader | null> {
     try {
       const result = await funifierApiClient.get<FunifierLeader>(
-        `/v3/leaderboard/${leaderboardId}/leader/${playerId}`
+        `/leaderboard/${leaderboardId}/leader/${playerId}`
       );
       return result;
     } catch (error) {
@@ -321,7 +321,7 @@ export class FunifierPlayerService {
       // This assumes there's a historical data collection
       // The actual collection name would depend on Funifier's setup
       const result = await funifierApiClient.post<Record<string, unknown>[]>(
-        '/v3/database/player_history/find',
+        '/database/player_history/find',
         { filter }
       );
       

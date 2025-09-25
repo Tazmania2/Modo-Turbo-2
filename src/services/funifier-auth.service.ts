@@ -50,7 +50,7 @@ export class FunifierAuthService {
   ): Promise<FunifierAuthResponse> {
     try {
       const response = await funifierApiClient.post<FunifierAuthResponse>(
-        '/v3/auth/login',
+        '/auth/login',
         {
           username: loginRequest.username,
           password: loginRequest.password,
@@ -104,7 +104,7 @@ export class FunifierAuthService {
       const principalData = await funifierApiClient.get<{
         roles: string[];
         player: FunifierPlayerStatus;
-      }>('/v3/database/principal');
+      }>('/database/principal');
 
       const isAdmin = principalData.roles.includes('admin');
 
@@ -128,7 +128,7 @@ export class FunifierAuthService {
 
     try {
       const response = await funifierApiClient.post<FunifierAuthResponse>(
-        '/v3/auth/refresh',
+        '/auth/refresh',
         {
           refresh_token: this.refreshToken,
         }
@@ -165,7 +165,7 @@ export class FunifierAuthService {
     
     try {
       if (this.accessToken) {
-        await funifierApiClient.post('/v3/auth/logout');
+        await funifierApiClient.post('/auth/logout');
       }
     } catch (error) {
       // Continue with logout even if API call fails
@@ -223,7 +223,7 @@ export class FunifierAuthService {
     }
 
     try {
-      const userData = await funifierApiClient.get<FunifierPlayerStatus>('/v3/player/me');
+      const userData = await funifierApiClient.get<FunifierPlayerStatus>('/player/me');
       this.currentUser = userData;
       return userData;
     } catch (error) {
@@ -278,7 +278,7 @@ export class FunifierAuthService {
       funifierApiClient.setCredentials(credentials);
 
       // Try to make a simple API call to validate credentials
-      await funifierApiClient.get('/v3/health');
+      await funifierApiClient.get('/health');
       return true;
     } catch (error) {
       return false;

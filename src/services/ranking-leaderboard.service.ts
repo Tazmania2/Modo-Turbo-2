@@ -50,7 +50,7 @@ export class RankingLeaderboardService {
    */
   async getLeaderboards(): Promise<LeaderboardsResponse> {
     try {
-      const response = await funifierApiClient.get<FunifierLeaderboard[]>('/v3/leaderboard');
+      const response = await funifierApiClient.get<FunifierLeaderboard[]>('/leaderboard');
       
       const leaderboards: Leaderboard[] = response.map(lb => ({
         _id: lb._id,
@@ -77,7 +77,7 @@ export class RankingLeaderboardService {
    */
   async getLeaderboardData(leaderboardId: string): Promise<FunifierLeaderboard> {
     try {
-      return await funifierApiClient.get<FunifierLeaderboard>(`/v3/leaderboard/${leaderboardId}`);
+      return await funifierApiClient.get<FunifierLeaderboard>(`/leaderboard/${leaderboardId}`);
     } catch (error) {
       console.error(`Failed to fetch leaderboard ${leaderboardId}:`, error);
       throw error;
