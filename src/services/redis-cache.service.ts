@@ -88,10 +88,10 @@ export class RedisCacheService {
         password: this.config.password,
         db: this.config.db,
         keyPrefix: this.config.keyPrefix,
-        retryDelayOnFailover: this.config.retryDelayOnFailover,
         maxRetriesPerRequest: this.config.maxRetriesPerRequest,
         lazyConnect: this.config.lazyConnect,
-        enableOfflineQueue: this.config.enableOfflineQueue
+        enableOfflineQueue: this.config.enableOfflineQueue,
+        retryStrategy: (times) => Math.min(times * (this.config.retryDelayOnFailover || 50), 2000)
       });
 
       this.redis.on('connect', () => {

@@ -1,8 +1,9 @@
-import { VercelDeploymentService, DeploymentTriggerOptions } from './vercel-deployment.service';
+import { VercelDeploymentService, DeploymentTriggerOptions, DeploymentVerificationResult } from './vercel-deployment.service';
 import { WhiteLabelConfigService } from './white-label-config.service';
-import { ErrorLoggerService } from './error-logger.service';
-import { DeploymentConfig, DeploymentResult, RollbackOptions } from '@/types/vercel';
+import { ErrorLoggerService, errorLogger } from './error-logger.service';
+import { DeploymentConfig, DeploymentResult, RollbackOptions, DeploymentStatus } from '@/types/vercel';
 import { encrypt, decrypt } from '@/utils/encryption';
+import { ErrorType } from '@/types/error';
 
 export interface AutomationConfig {
   vercelToken: string;
@@ -103,7 +104,7 @@ export class DeploymentAutomationService {
       const errorMessage = error instanceof Error ? error.message : 'Unknown deployment error';
       
       await this.errorLogger.logError({
-        type: 'DEPLOYMENT_ERROR',
+        type: ErrorType.CONFIGURATION_ERROR,
         message: errorMessage,
         details: { instanceId, options },
         timestamp: new Date(),
@@ -175,7 +176,11 @@ export class DeploymentAutomationService {
     try {
       const deployment = await this.vercelService.rollbackDeployment(options.deploymentId);
       
-      let verificationResult = { success: true, error: undefined };
+      let verificationResult: DeploymentVerificationResult = { 
+        success: true, 
+        deploymentId: deployment.id,
+        status: 'READY' as DeploymentStatus
+      };
       
       if (!options.skipHealthCheck) {
         verificationResult = await this.vercelService.verifyDeployment(deployment.id);
@@ -191,7 +196,7 @@ export class DeploymentAutomationService {
 
       // Log rollback
       await this.errorLogger.logError({
-        type: 'DEPLOYMENT_ROLLBACK',
+        type: ErrorType.CONFIGURATION_ERROR,
         message: `Deployment rolled back: ${options.reason || 'Manual rollback'}`,
         details: options,
         timestamp: new Date(),
@@ -331,18 +336,17 @@ export class DeploymentAutomationService {
   private async logDeploymentResult(instanceId: string, result: DeploymentResult): Promise<void> {
     const logLevel = result.success ? 'info' : 'error';
     
-    await this.errorLogger.logError({
-      type: result.success ? 'DEPLOYMENT_SUCCESS' : 'DEPLOYMENT_FAILURE',
-      message: result.success 
-        ? `Deployment successful for instance: ${instanceId}`
-        : `Deployment failed for instance: ${instanceId} - ${result.error}`,
-      details: { instanceId, result },
-      timestamp: new Date(),
-      retryable: !result.success,
-      userMessage: result.success 
-        ? 'Deployment completed successfully'
-        : 'Deployment failed. Please check the logs and try again.'
-    });
+    // Only log errors, not successes
+    if (!result.success) {
+      await this.errorLogger.logError({
+        type: ErrorType.CONFIGURATION_ERROR,
+        message: `Deployment failed for instance: ${instanceId} - ${result.error}`,
+        details: { instanceId, result },
+        timestamp: new Date(),
+        retryable: true,
+        userMessage: 'Deployment failed. Please check the logs and try again.'
+      });
+    }
   }
 }
 

@@ -1,5 +1,6 @@
 import { VercelDeploymentService } from './vercel-deployment.service';
 import { ErrorLoggerService } from './error-logger.service';
+import { ErrorType } from '@/types/error';
 
 export interface VerificationTest {
   name: string;
@@ -94,7 +95,7 @@ export class DeploymentVerificationService {
       const errorMessage = error instanceof Error ? error.message : 'Unknown verification error';
       
       await this.errorLogger.logError({
-        type: 'DEPLOYMENT_VERIFICATION_ERROR',
+        type: ErrorType.CONFIGURATION_ERROR,
         message: `Deployment verification failed: ${errorMessage}`,
         details: { deploymentId },
         timestamp: new Date(),
@@ -550,15 +551,16 @@ export class DeploymentVerificationService {
   private async logVerificationResult(report: DeploymentVerificationReport): Promise<void> {
     const logLevel = report.overallSuccess ? 'info' : 'warn';
     
-    await this.errorLogger.logError({
-      type: report.overallSuccess ? 'DEPLOYMENT_VERIFICATION_SUCCESS' : 'DEPLOYMENT_VERIFICATION_WARNING',
-      message: `Deployment verification completed: ${report.passedTests}/${report.totalTests} tests passed`,
-      details: report,
-      timestamp: new Date(),
-      retryable: false,
-      userMessage: report.overallSuccess 
-        ? 'Deployment verification passed successfully'
-        : 'Deployment verification completed with some issues'
-    });
+    // Only log warnings/errors, not successes
+    if (!report.overallSuccess) {
+      await this.errorLogger.logError({
+        type: ErrorType.CONFIGURATION_ERROR,
+        message: `Deployment verification completed with issues: ${report.passedTests}/${report.totalTests} tests passed`,
+        details: report,
+        timestamp: new Date(),
+        retryable: false,
+        userMessage: 'Deployment verification completed with some issues'
+      });
+    }
   }
 }

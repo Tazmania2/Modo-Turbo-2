@@ -181,7 +181,7 @@ export function handleApiError(
     url: request.url,
     method: request.method,
     userAgent: request.headers.get('user-agent') || undefined,
-    ip: request.ip || request.headers.get('x-forwarded-for') || undefined,
+    ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
     context
   } : { context };
 

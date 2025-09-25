@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { 
   LeaderboardsResponse, 
   PersonalRankingResponse, 
-  GlobalRankingResponse,
-  RankingDashboardData 
+  GlobalRankingResponse
 } from '@/services/ranking-leaderboard.service';
+import { RankingDashboardData } from '@/services/ranking-integration.service';
 
 interface UseRankingDataOptions {
   playerId?: string;

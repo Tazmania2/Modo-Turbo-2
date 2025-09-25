@@ -25,7 +25,7 @@ export interface ErrorMetrics {
   errorRate: number;
 }
 
-class ErrorLoggerService {
+export class ErrorLoggerService {
   private errorLog: ErrorLogEntry[] = [];
   private maxLogSize = 1000;
   private errorCallbacks: ((error: ErrorLogEntry) => void)[] = [];

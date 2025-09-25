@@ -162,13 +162,43 @@ class FallbackManagerService {
   private async getDemoData<T>(fallbackKey: string): Promise<T> {
     switch (fallbackKey) {
       case 'dashboardData':
-        return demoDataService.generateDashboardData() as T;
+        // Generate demo dashboard data using available methods
+        const players = demoDataService.generatePlayers(50);
+        const playerStatus = demoDataService.generatePlayerStatus('demo_player_1');
+        return {
+          player: playerStatus,
+          goals: playerStatus.challenges,
+          leaderboards: demoDataService.generateLeaderboards(),
+          performanceGraphs: demoDataService.generateCurrentSeasonPerformanceGraphs('demo_player_1')
+        } as T;
       
       case 'rankingData':
-        return demoDataService.generateRankingData() as T;
+        // Generate demo ranking data
+        const rankingPlayers = demoDataService.generatePlayers(50);
+        return {
+          players: rankingPlayers,
+          leaderboards: demoDataService.generateLeaderboards(),
+          raceVisualization: demoDataService.generateRaceVisualization(rankingPlayers),
+          personalCard: demoDataService.generatePersonalCard('demo_player_1', rankingPlayers),
+          contextualRanking: demoDataService.generateContextualRanking('demo_player_1', rankingPlayers)
+        } as T;
       
       case 'configuration':
-        return demoDataService.generateWhiteLabelConfig() as T;
+        // Generate demo white label configuration
+        return {
+          branding: {
+            companyName: 'Demo Company',
+            logo: 'https://via.placeholder.com/200x80',
+            primaryColor: '#3B82F6',
+            secondaryColor: '#10B981'
+          },
+          features: {
+            dashboard: true,
+            ranking: true,
+            history: true,
+            admin: true
+          }
+        } as T;
       
       default:
         throw new Error(`No demo data available for ${fallbackKey}`);

@@ -60,24 +60,24 @@ export class PerformanceMonitorService {
   private static instance: PerformanceMonitorService;
   
   // Prometheus metrics
-  private cacheHitsCounter: Counter<string>;
-  private cacheMissesCounter: Counter<string>;
-  private cacheResponseTimeHistogram: Histogram<string>;
+  private cacheHitsCounter!: Counter<string>;
+  private cacheMissesCounter!: Counter<string>;
+  private cacheResponseTimeHistogram!: Histogram<string>;
   
-  private apiRequestCounter: Counter<string>;
-  private apiResponseTimeHistogram: Histogram<string>;
-  private apiErrorCounter: Counter<string>;
+  private apiRequestCounter!: Counter<string>;
+  private apiResponseTimeHistogram!: Histogram<string>;
+  private apiErrorCounter!: Counter<string>;
   
-  private funifierRequestCounter: Counter<string>;
-  private funifierResponseTimeHistogram: Histogram<string>;
-  private funifierErrorCounter: Counter<string>;
+  private funifierRequestCounter!: Counter<string>;
+  private funifierResponseTimeHistogram!: Histogram<string>;
+  private funifierErrorCounter!: Counter<string>;
   
-  private memoryUsageGauge: Gauge<string>;
-  private activeConnectionsGauge: Gauge<string>;
+  private memoryUsageGauge!: Gauge<string>;
+  private activeConnectionsGauge!: Gauge<string>;
   
-  private dashboardLoadTimeHistogram: Histogram<string>;
-  private rankingLoadTimeHistogram: Histogram<string>;
-  private setupCompletionTimeHistogram: Histogram<string>;
+  private dashboardLoadTimeHistogram!: Histogram<string>;
+  private rankingLoadTimeHistogram!: Histogram<string>;
+  private setupCompletionTimeHistogram!: Histogram<string>;
   
   // Internal tracking
   private metrics: PerformanceMetrics;

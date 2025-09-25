@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auditLogger } from '@/services/audit-logger.service';
+import { auditLogger, SecurityEvent } from '@/services/audit-logger.service';
 
 export interface SecurityOptions {
   enableCORS?: boolean;
@@ -343,11 +343,26 @@ function getClientIdentifier(request: NextRequest): string {
 }
 
 /**
+ * Map violation types to security event actions
+ */
+function getSecurityEventAction(violationType: SecurityViolation['type']): SecurityEvent['action'] {
+  const actionMap: Record<SecurityViolation['type'], SecurityEvent['action']> = {
+    'rate_limit': 'SECURITY_VIOLATION_RATE_LIMIT',
+    'csrf': 'SECURITY_VIOLATION_CSRF',
+    'xss': 'SECURITY_VIOLATION_XSS',
+    'ddos': 'SECURITY_VIOLATION_DDOS',
+    'invalid_input': 'SUSPICIOUS_ACTIVITY'
+  };
+  
+  return actionMap[violationType] || 'SUSPICIOUS_ACTIVITY';
+}
+
+/**
  * Log security violations
  */
 function logSecurityViolation(violation: SecurityViolation, request: NextRequest): void {
   auditLogger.logSecurityEvent({
-    action: `SECURITY_VIOLATION_${violation.type.toUpperCase()}`,
+    action: getSecurityEventAction(violation.type),
     severity: violation.severity,
     clientId: violation.clientId,
     userAgent: request.headers.get('user-agent') || undefined,
@@ -404,7 +419,7 @@ export function withSecurity(
           type: 'ddos',
           severity: 'critical',
           clientId,
-          userAgent,
+          userAgent: userAgent || undefined,
           url: request.url,
           timestamp: new Date(),
           details: { reason: 'Suspicious activity pattern detected' }
@@ -430,7 +445,7 @@ export function withSecurity(
       if (!rateLimitResult.allowed) {
         if (rateLimitResult.violation) {
           rateLimitResult.violation.url = request.url;
-          rateLimitResult.violation.userAgent = userAgent;
+          rateLimitResult.violation.userAgent = userAgent || undefined;
           logSecurityViolation(rateLimitResult.violation, request);
         }
         
@@ -472,7 +487,7 @@ export function withSecurity(
           type: 'xss',
           severity: 'high',
           clientId,
-          userAgent,
+          userAgent: userAgent || undefined,
           url: request.url,
           timestamp: new Date(),
           details: { queryString, detectedIn: 'query_parameters' }
@@ -553,7 +568,7 @@ export function withSecurity(
         action: 'MIDDLEWARE_ERROR',
         severity: 'medium',
         clientId,
-        userAgent,
+        userAgent: userAgent || undefined,
         url: request.url,
         method: request.method,
         details: { error: error instanceof Error ? error.message : 'Unknown error' },

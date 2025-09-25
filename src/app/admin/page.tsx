@@ -2,7 +2,7 @@
 
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { FeatureTogglePanel } from '@/components/admin/FeatureTogglePanel';
 import { BrandingPanel } from '@/components/admin/BrandingPanel';
 import { FunifierCredentialsPanel } from '@/components/admin/FunifierCredentialsPanel';
@@ -10,7 +10,7 @@ import { AdminOverview } from '@/components/admin/AdminOverview';
 import SecurityPanel from '@/components/admin/SecurityPanel';
 import { WhiteLabelFeatures } from '@/types/funifier';
 
-export default function AdminPage() {
+function AdminPageContent() {
   const { user, isAuthenticated, isAdmin, isLoading, logout } = useAuthContext();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -182,5 +182,17 @@ export default function AdminPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <AdminPageContent />
+    </Suspense>
   );
 }

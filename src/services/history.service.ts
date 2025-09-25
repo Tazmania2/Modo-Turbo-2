@@ -2,7 +2,7 @@ import { FunifierDatabaseService } from './funifier-database.service';
 import { FunifierPlayerService } from './funifier-player.service';
 import { ConfigurationCache } from '../utils/cache';
 import { Season, PerformanceGraph, HistoryData } from '../types/dashboard';
-import { FunifierPlayerStatus } from '../types/funifier';
+
 import { demoDataService } from './demo-data.service';
 
 export class HistoryService {
@@ -12,8 +12,8 @@ export class HistoryService {
   private isDemoMode: boolean;
 
   constructor() {
-    this.databaseService = new FunifierDatabaseService();
-    this.playerService = new FunifierPlayerService();
+    this.databaseService = FunifierDatabaseService.getInstance();
+    this.playerService = FunifierPlayerService.getInstance();
     this.cache = new ConfigurationCache();
     this.isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || false;
   }
@@ -63,9 +63,9 @@ export class HistoryService {
           ]
         };
 
-        const seasonData = await this.databaseService.aggregate(seasonQuery);
+        const seasonData = await this.databaseService.aggregate<Record<string, any>>(seasonQuery.collection, seasonQuery.pipeline);
         
-        seasons = seasonData.map((season: any) => ({
+        seasons = seasonData.map((season) => ({
           _id: season._id,
           name: season.name,
           startDate: new Date(season.startDate),
@@ -138,9 +138,9 @@ export class HistoryService {
           ]
         };
 
-        const dailyStats = await this.databaseService.aggregate(currentSeasonQuery);
+        const dailyStats = await this.databaseService.aggregate<Record<string, any>>(currentSeasonQuery.collection, currentSeasonQuery.pipeline);
         
-        performanceGraphs = dailyStats.map((stat: any) => ({
+        performanceGraphs = dailyStats.map((stat) => ({
           date: stat.date.toISOString().split('T')[0], // Format as YYYY-MM-DD
           points: stat.totalPoints || 0,
           position: stat.position || 0
@@ -228,7 +228,7 @@ export class HistoryService {
           ]
         };
 
-        const seasonData = await this.databaseService.aggregate(seasonQuery);
+        const seasonData = await this.databaseService.aggregate<Record<string, any>>(seasonQuery.collection, seasonQuery.pipeline);
         
         if (seasonData && seasonData.length > 0) {
           const season = seasonData[0];

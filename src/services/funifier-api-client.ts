@@ -194,14 +194,8 @@ export class FunifierApiClient {
           status: 'ok',
           timestamp: new Date().toISOString(),
         };
-      } catch {
-        throw this.createApiError(
-          ErrorType.FUNIFIER_API_ERROR,
-          'Funifier API health check failed',
-          'Unable to connect to Funifier services',
-          error,
-          true
-        );
+      } catch (error) {
+        throw this.handleError(error);
       }
     }
   }

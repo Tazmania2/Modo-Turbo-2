@@ -317,9 +317,9 @@ export const commonSchemas = {
   
   dashboardQuery: z.object({
     type: z.string()
+      .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid dashboard type')
       .optional()
-      .default('default')
-      .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid dashboard type'),
+      .default('default'),
     refresh: z.string().optional().transform(val => val === 'true'),
   }),
   
