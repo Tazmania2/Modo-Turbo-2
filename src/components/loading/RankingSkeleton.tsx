@@ -20,14 +20,17 @@ export const RankingSkeleton: React.FC = () => {
           <SkeletonLoader width="100%" height={4} className="absolute top-1/2 transform -translate-y-1/2" />
           {/* Player positions */}
           {[20, 45, 70, 85].map((position, index) => (
-            <SkeletonLoader
+            <div
               key={index}
-              width={32}
-              height={32}
-              variant="circular"
-              className={`absolute top-1/2 transform -translate-y-1/2`}
+              className="absolute top-1/2 transform -translate-y-1/2"
               style={{ left: `${position}%` }}
-            />
+            >
+              <SkeletonLoader
+                width={32}
+                height={32}
+                variant="circular"
+              />
+            </div>
           ))}
         </div>
       </div>

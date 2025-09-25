@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { LoadingSpinner } from '@/components/loading/LoadingSpinner';
 import { Card, CardContent } from '@/components/ui/Card';
 import { RaceVisualization } from './RaceVisualization';
 import { PersonalRankingCard } from './PersonalRankingCard';
@@ -51,8 +51,8 @@ export const PersonalizedRankingContainer: React.FC<PersonalizedRankingContainer
 
   // Auto-select first active leaderboard if none selected
   useEffect(() => {
-    if (!selectedLeaderboard && leaderboards?.leaderboards?.length > 0) {
-      const firstActive = leaderboards.leaderboards.find(lb => lb.active);
+    if (!selectedLeaderboard && leaderboards?.leaderboards && leaderboards.leaderboards.length > 0) {
+      const firstActive = leaderboards.leaderboards.find(lb => lb.isActive);
       if (firstActive) {
         setSelectedLeaderboard(firstActive._id);
       }
@@ -96,7 +96,12 @@ export const PersonalizedRankingContainer: React.FC<PersonalizedRankingContainer
     switch (currentView) {
       case 'personal':
         if (isLoadingPersonalRanking) {
-          return <LoadingSpinner size="lg" text="Loading your personal ranking..." />;
+          return (
+            <div className="flex flex-col items-center space-y-4">
+              <LoadingSpinner size="lg" />
+              <p className="text-sm text-gray-600">Loading your personal ranking...</p>
+            </div>
+          );
         }
         
         if (!personalRanking) {
@@ -125,7 +130,12 @@ export const PersonalizedRankingContainer: React.FC<PersonalizedRankingContainer
 
       case 'race':
         if (isLoadingPersonalRanking) {
-          return <LoadingSpinner size="lg" text="Loading race visualization..." />;
+          return (
+            <div className="flex flex-col items-center space-y-4">
+              <LoadingSpinner size="lg" />
+              <p className="text-sm text-gray-600">Loading race visualization...</p>
+            </div>
+          );
         }
         
         if (!personalRanking?.raceData) {
@@ -176,7 +186,12 @@ export const PersonalizedRankingContainer: React.FC<PersonalizedRankingContainer
 
       case 'global':
         if (isLoadingGlobalRanking) {
-          return <LoadingSpinner size="lg" text="Loading global rankings..." />;
+          return (
+            <div className="flex flex-col items-center space-y-4">
+              <LoadingSpinner size="lg" />
+              <p className="text-sm text-gray-600">Loading global rankings...</p>
+            </div>
+          );
         }
         
         if (!globalRanking) {
@@ -259,7 +274,10 @@ export const PersonalizedRankingContainer: React.FC<PersonalizedRankingContainer
       <RankingNavigation
         currentView={currentView}
         onViewChange={setCurrentView}
-        leaderboards={leaderboards?.leaderboards}
+        leaderboards={leaderboards?.leaderboards?.map(lb => ({
+          ...lb,
+          active: lb.isActive
+        }))}
         selectedLeaderboard={selectedLeaderboard}
         onLeaderboardChange={setSelectedLeaderboard}
         isLoading={isLoading}

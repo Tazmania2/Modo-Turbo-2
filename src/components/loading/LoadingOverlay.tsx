@@ -35,6 +35,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
     dots: LoadingDots,
   }[type];
 
+  // Map xl size to lg for components that don't support xl
+  const componentSize: 'sm' | 'md' | 'lg' = size === 'xl' && type === 'dots' ? 'lg' : (size as 'sm' | 'md' | 'lg');
+
   return (
     <div className={cn('relative', className)}>
       {children}
@@ -52,7 +55,7 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
             <LoadingPulse size={size} text={text} />
           ) : (
             <>
-              <LoadingComponent size={size} />
+              <LoadingComponent size={componentSize} />
               {text && (
                 <p className="text-sm text-gray-600 animate-pulse">{text}</p>
               )}

@@ -114,7 +114,7 @@ export const LoadingIntegrationExample: React.FC = () => {
   // Simulate batch data refresh
   const refreshAllData = async () => {
     try {
-      showInfo('Refreshing data', 'Loading latest information from all sources...');
+      showSuccess('Refreshing data', 'Loading latest information from all sources...');
       
       // Run both operations in parallel
       await Promise.all([

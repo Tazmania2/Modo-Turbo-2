@@ -3,7 +3,7 @@
 import React from 'react';
 import { PersonalizedRankingContainer } from '@/components/ranking';
 import { useAuth } from '@/hooks/useAuth';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { LoadingSpinner } from '@/components/loading/LoadingSpinner';
 import { Card, CardContent } from '@/components/ui/Card';
 
 export default function RankingPage() {
@@ -12,7 +12,10 @@ export default function RankingPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" text="Loading..." />
+        <div className="flex flex-col items-center space-y-4">
+          <LoadingSpinner size="lg" />
+          <p className="text-sm text-gray-600">Loading...</p>
+        </div>
       </div>
     );
   }
