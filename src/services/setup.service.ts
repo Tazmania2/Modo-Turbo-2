@@ -130,11 +130,15 @@ export class SetupService {
   async needsSetup(instanceId?: string): Promise<boolean> {
     try {
       if (!instanceId) {
+        console.log('No instance ID provided, setup needed');
         return true; // No instance ID means fresh setup
       }
 
+      console.log(`Checking setup status for instance: ${instanceId}`);
       const config = await whiteLabelConfigService.getConfiguration(instanceId);
-      return !config; // No configuration means setup needed
+      const needsSetup = !config;
+      console.log(`Setup needed for ${instanceId}: ${needsSetup}`);
+      return needsSetup; // No configuration means setup needed
     } catch (error) {
       console.error('Error checking setup status:', error);
       return true; // Assume setup needed on error
@@ -248,14 +252,22 @@ export class SetupService {
       const actualInstanceId = instanceId || this.generateInstanceId();
 
       // Initialize the Funifier API client with credentials first
+      console.log('Initializing Funifier API client...');
       funifierAuthService.initialize({
         apiKey: credentials.apiKey,
         serverUrl: credentials.serverUrl,
         authToken: credentials.authToken,
       });
 
-      // Initialize the white-label collection
-      await whiteLabelConfigService.initializeCollection();
+      // Initialize the white-label collection (with fallback)
+      console.log('Initializing white-label collection...');
+      try {
+        await whiteLabelConfigService.initializeCollection();
+        console.log('Collection initialized successfully');
+      } catch (initError) {
+        console.warn('Failed to initialize collection, will proceed with cache-only mode:', initError);
+        // Don't fail the setup - we'll use cache-only mode as fallback
+      }
 
       // Use the white-label config service to handle Funifier setup
       const setupResult = await whiteLabelConfigService.handleSetup({

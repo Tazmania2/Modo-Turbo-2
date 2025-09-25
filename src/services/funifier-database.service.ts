@@ -56,9 +56,12 @@ export class FunifierDatabaseService {
    */
   async collectionExists(collectionName: string): Promise<boolean> {
     try {
+      console.log(`Checking if collection exists: ${collectionName}`);
       await funifierApiClient.get(`/database/${collectionName}/info`);
+      console.log(`Collection ${collectionName} exists`);
       return true;
     } catch (error) {
+      console.log(`Collection ${collectionName} does not exist or error occurred:`, error);
       return false;
     }
   }
@@ -71,12 +74,15 @@ export class FunifierDatabaseService {
     document: T
   ): Promise<DatabaseInsertResult> {
     try {
+      console.log(`Inserting document into collection: ${collectionName}`);
       const result = await funifierApiClient.post<DatabaseInsertResult>(
         `/database/${collectionName}`,
         document
       );
+      console.log('Insert result:', result);
       return result;
     } catch (error) {
+      console.error(`Failed to insert document into ${collectionName}:`, error);
       throw error;
     }
   }

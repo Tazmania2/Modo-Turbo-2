@@ -1,20 +1,17 @@
-import { 
-  WhiteLabelConfiguration, 
-  FunifierWhiteLabelRecord, 
+import {
+  WhiteLabelConfiguration,
+  FunifierWhiteLabelRecord,
   SetupRequest,
-  WhiteLabelConfigResponse,
-  WhiteLabelBranding,
-  WhiteLabelFeatures,
-  WhiteLabelFunifierIntegration
+  WhiteLabelConfigResponse
 } from '@/types/funifier';
 import { funifierDatabaseService } from './funifier-database.service';
 import { funifierAuthService } from './funifier-auth.service';
-import { encrypt, decrypt, hash, generateSecureToken } from '@/utils/encryption';
-import { 
-  validateWhiteLabelConfiguration, 
-  validateSetupRequest, 
+import { encrypt, decrypt, generateSecureToken } from '@/utils/encryption';
+import {
+  validateWhiteLabelConfiguration,
+  validateSetupRequest,
   sanitizeConfiguration,
-  ValidationResult 
+  ValidationResult
 } from '@/utils/validation';
 import { whiteLabelConfigCache } from '@/utils/cache';
 
@@ -39,7 +36,7 @@ export class WhiteLabelConfigService {
   private static instance: WhiteLabelConfigService;
   private static readonly COLLECTION_NAME = 'whitelabel__c';
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): WhiteLabelConfigService {
     if (!WhiteLabelConfigService.instance) {
@@ -53,19 +50,25 @@ export class WhiteLabelConfigService {
    */
   async initializeCollection(): Promise<void> {
     try {
+      console.log('Checking if white-label collection exists...');
       const exists = await funifierDatabaseService.collectionExists(WhiteLabelConfigService.COLLECTION_NAME);
-      
+      console.log(`Collection exists: ${exists}`);
+
       if (!exists) {
+        console.log('Creating white-label collection...');
         await funifierDatabaseService.createCollection(WhiteLabelConfigService.COLLECTION_NAME);
-        
+
         // Create index on instanceId for faster lookups
+        console.log('Creating index on instanceId...');
         await funifierDatabaseService.createIndex(
           WhiteLabelConfigService.COLLECTION_NAME,
           { instanceId: 1 },
           { unique: true }
         );
+        console.log('White-label collection initialized successfully');
       }
     } catch (error) {
+      console.error('Failed to initialize white-label collection:', error);
       throw new Error(`Failed to initialize white-label collection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -74,7 +77,7 @@ export class WhiteLabelConfigService {
    * Create or update white-label configuration
    */
   async saveConfiguration(
-    instanceId: string, 
+    instanceId: string,
     config: WhiteLabelConfiguration,
     userId: string
   ): Promise<ConfigurationUpdateResult> {
@@ -93,51 +96,83 @@ export class WhiteLabelConfigService {
       // Sanitize configuration
       const sanitizedConfig = sanitizeConfiguration(config);
 
-      // Encrypt sensitive data
-      const encryptedConfig = await this.encryptSensitiveData(sanitizedConfig);
-
-      // Prepare record for Funifier
-      const record: Partial<FunifierWhiteLabelRecord> = {
-        instanceId,
-        config: encryptedConfig,
-        isActive: true,
-        lastModifiedBy: userId,
-        time: Date.now()
-      };
-
-      // Check if configuration already exists
-      const existing = await this.findConfigurationRecord(instanceId);
-      
-      let result;
-      if (existing) {
-        // Update existing configuration
-        result = await funifierDatabaseService.updateById(
-          WhiteLabelConfigService.COLLECTION_NAME,
-          existing._id,
-          record
-        );
-      } else {
-        // Create new configuration
-        record.createdBy = userId;
-        result = await funifierDatabaseService.insertOne(
-          WhiteLabelConfigService.COLLECTION_NAME,
-          record
-        );
-      }
-
-      if (result.acknowledged) {
-        // Update cache
+      // For demo mode, just cache the configuration
+      if (isDemoMode) {
+        console.log('Demo mode detected, saving to cache only');
         whiteLabelConfigCache.setConfiguration(instanceId, sanitizedConfig);
-        
         return {
           success: true,
           configuration: sanitizedConfig,
           warnings: validation.warnings
         };
-      } else {
+      }
+
+      // For Funifier mode, try to save to database with fallback
+      console.log('Funifier mode detected, attempting to save to database');
+
+      try {
+        // Encrypt sensitive data
+        const encryptedConfig = await this.encryptSensitiveData(sanitizedConfig);
+
+        // Prepare record for Funifier
+        const record: Partial<FunifierWhiteLabelRecord> = {
+          instanceId,
+          config: encryptedConfig,
+          isActive: true,
+          lastModifiedBy: userId,
+          time: Date.now()
+        };
+
+        // Check if configuration already exists
+        const existing = await this.findConfigurationRecord(instanceId);
+
+        let result;
+        if (existing) {
+          // Update existing configuration
+          console.log(`Updating existing configuration for instance: ${instanceId}`);
+          result = await funifierDatabaseService.updateById(
+            WhiteLabelConfigService.COLLECTION_NAME,
+            existing._id,
+            record
+          );
+          console.log('Update result:', result);
+        } else {
+          // Create new configuration
+          console.log(`Creating new configuration for instance: ${instanceId}`);
+          record.createdBy = userId;
+          result = await funifierDatabaseService.insertOne(
+            WhiteLabelConfigService.COLLECTION_NAME,
+            record
+          );
+          console.log('Insert result:', result);
+        }
+
+        if (result.acknowledged) {
+          // Update cache
+          whiteLabelConfigCache.setConfiguration(instanceId, sanitizedConfig);
+
+          return {
+            success: true,
+            configuration: sanitizedConfig,
+            warnings: validation.warnings
+          };
+        } else {
+          console.error('Database operation not acknowledged:', result);
+          throw new Error('Database operation not acknowledged');
+        }
+      } catch (dbError) {
+        console.error('Database save failed, falling back to cache-only mode:', dbError);
+
+        // Fallback: Save to cache and warn user
+        whiteLabelConfigCache.setConfiguration(instanceId, sanitizedConfig);
+
         return {
-          success: false,
-          errors: ['Failed to save configuration to database']
+          success: true,
+          configuration: sanitizedConfig,
+          warnings: [
+            ...(validation.warnings || []),
+            'Configuration saved locally but could not be saved to Funifier database. You may need to check your Funifier connection and credentials.'
+          ]
         };
       }
     } catch (error) {
@@ -156,22 +191,35 @@ export class WhiteLabelConfigService {
       // Check cache first
       const cached = whiteLabelConfigCache.getConfiguration(instanceId);
       if (cached) {
+        console.log(`Configuration found in cache for instance: ${instanceId}`);
         return cached;
       }
 
-      // Fetch from database
-      const record = await this.findConfigurationRecord(instanceId);
-      if (!record || !record.isActive) {
+      // For demo instances, don't try to fetch from database
+      if (instanceId.startsWith('demo_') || instanceId.includes('demo')) {
+        console.log(`Demo instance detected: ${instanceId}, returning null to trigger demo setup`);
         return null;
       }
 
-      // Decrypt sensitive data
-      const decryptedConfig = await this.decryptSensitiveData(record.config);
+      // Fetch from database for Funifier instances
+      try {
+        const record = await this.findConfigurationRecord(instanceId);
+        if (!record || !record.isActive) {
+          console.log(`No active configuration found in database for instance: ${instanceId}`);
+          return null;
+        }
 
-      // Cache the result
-      whiteLabelConfigCache.setConfiguration(instanceId, decryptedConfig);
+        // Decrypt sensitive data
+        const decryptedConfig = await this.decryptSensitiveData(record.config);
 
-      return decryptedConfig;
+        // Cache the result
+        whiteLabelConfigCache.setConfiguration(instanceId, decryptedConfig);
+
+        return decryptedConfig;
+      } catch (dbError) {
+        console.error('Database error, falling back to cache-only mode:', dbError);
+        return null;
+      }
     } catch (error) {
       console.error('Failed to get configuration:', error);
       return null;
@@ -221,40 +269,38 @@ export class WhiteLabelConfigService {
       const actualInstanceId = instanceId || generateSecureToken(16);
 
       if (request.mode === 'demo') {
-        // Create demo configuration
+        // For demo mode, we don't need to save to Funifier database
+        // Just cache the configuration locally
+        console.log('Setting up demo mode...');
         const demoConfig = this.createDemoConfiguration(actualInstanceId);
-        const saveResult = await this.saveConfiguration(actualInstanceId, demoConfig, 'system');
-        
-        if (saveResult.success) {
-          return {
-            success: true,
-            instanceId: actualInstanceId,
-            redirectUrl: `/dashboard?instance=${actualInstanceId}`
-          };
-        } else {
-          return {
-            success: false,
-            errors: saveResult.errors
-          };
-        }
+
+        // Cache the demo configuration without saving to database
+        whiteLabelConfigCache.setConfiguration(actualInstanceId, demoConfig);
+
+        return {
+          success: true,
+          instanceId: actualInstanceId,
+          redirectUrl: `/dashboard?instance=${actualInstanceId}`
+        };
       } else if (request.mode === 'funifier' && request.funifierCredentials) {
         // Create Funifier-based configuration
         const funifierConfig = this.createFunifierConfiguration(
-          actualInstanceId, 
+          actualInstanceId,
           request.funifierCredentials
         );
-        
-        // Test Funifier connection before saving
+
+        // Test Funifier connection before saving (non-blocking)
+        console.log('Testing Funifier connection...');
         const connectionTest = await this.testFunifierConnection(request.funifierCredentials);
         if (!connectionTest.success) {
-          return {
-            success: false,
-            errors: ['Failed to connect to Funifier with provided credentials']
-          };
+          console.warn('Funifier connection test failed, but proceeding with setup:', connectionTest.error);
+          // Don't fail the setup - we'll save locally and warn the user
+        } else {
+          console.log('Funifier connection test successful');
         }
 
         const saveResult = await this.saveConfiguration(actualInstanceId, funifierConfig, 'system');
-        
+
         if (saveResult.success) {
           return {
             success: true,
@@ -288,10 +334,10 @@ export class WhiteLabelConfigService {
     try {
       const defaultConfig = this.createDemoConfiguration(instanceId);
       const result = await this.saveConfiguration(instanceId, defaultConfig, userId);
-      
+
       // Clear cache
       whiteLabelConfigCache.invalidateInstance(instanceId);
-      
+
       return result;
     } catch (error) {
       return {
@@ -340,7 +386,7 @@ export class WhiteLabelConfigService {
       );
 
       const configurations: WhiteLabelConfigResponse[] = [];
-      
+
       for (const record of records) {
         try {
           const decryptedConfig = await this.decryptSensitiveData(record.config);
@@ -389,7 +435,7 @@ export class WhiteLabelConfigService {
 
   private async encryptSensitiveData(config: WhiteLabelConfiguration): Promise<WhiteLabelConfiguration> {
     const encryptedConfig = { ...config };
-    
+
     // Encrypt Funifier credentials
     if (config.funifierIntegration.apiKey) {
       encryptedConfig.funifierIntegration.apiKey = encrypt(config.funifierIntegration.apiKey);
@@ -403,7 +449,7 @@ export class WhiteLabelConfigService {
 
   private async decryptSensitiveData(config: WhiteLabelConfiguration): Promise<WhiteLabelConfiguration> {
     const decryptedConfig = { ...config };
-    
+
     // Decrypt Funifier credentials
     if (config.funifierIntegration.apiKey) {
       try {
@@ -460,7 +506,7 @@ export class WhiteLabelConfigService {
   }
 
   private createFunifierConfiguration(
-    instanceId: string, 
+    instanceId: string,
     credentials: { apiKey: string; serverUrl: string; authToken: string }
   ): WhiteLabelConfiguration {
     return {
@@ -498,25 +544,54 @@ export class WhiteLabelConfigService {
 
   private async testFunifierConnection(credentials: { apiKey: string; serverUrl: string; authToken: string }): Promise<{ success: boolean; error?: string }> {
     try {
-      // Test the connection using the auth service
-      const isValid = await funifierAuthService.validateCredentials({
-        apiKey: credentials.apiKey,
-        serverUrl: credentials.serverUrl,
-        authToken: credentials.authToken,
-      });
+      // Basic validation first
+      if (!credentials.apiKey || !credentials.serverUrl || !credentials.authToken) {
+        return {
+          success: false,
+          error: 'Missing required credentials (API Key, Server URL, or Auth Token)'
+        };
+      }
+
+      // Validate URL format
+      try {
+        new URL(credentials.serverUrl);
+      } catch {
+        return {
+          success: false,
+          error: 'Invalid server URL format'
+        };
+      }
+
+      // Test the connection using the auth service (with timeout)
+      console.log('Attempting to validate Funifier credentials...');
+      const isValid = await Promise.race([
+        funifierAuthService.validateCredentials({
+          apiKey: credentials.apiKey,
+          serverUrl: credentials.serverUrl,
+          authToken: credentials.authToken,
+        }),
+        new Promise<boolean>((_, reject) =>
+          setTimeout(() => reject(new Error('Connection timeout')), 10000)
+        )
+      ]);
 
       if (isValid) {
+        console.log('Funifier credentials validated successfully');
         return { success: true };
       }
 
-      return { 
-        success: false, 
-        error: 'Failed to connect to Funifier with provided credentials' 
+      return {
+        success: false,
+        error: 'Failed to connect to Funifier with provided credentials'
       };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Connection test failed' 
+      const errorMessage = error instanceof Error ? error.message : 'Connection test failed';
+      console.warn('Funifier connection test failed:', errorMessage);
+
+      // Don't treat connection failures as fatal - the setup can still proceed
+      return {
+        success: false,
+        error: `Connection test failed: ${errorMessage}. Setup will proceed with local storage.`
       };
     }
   }
