@@ -1,11 +1,9 @@
 import * as crypto from 'crypto';
 
-const ALGORITHM = 'aes-256-gcm';
-const IV_LENGTH = 16; // For GCM, this is always 16
-const SALT_LENGTH = 64;
-const TAG_LENGTH = 16;
-const TAGPOSITION = SALT_LENGTH + IV_LENGTH;
-const ENCRYPTED_POSITION = TAGPOSITION + TAG_LENGTH;
+const ALGORITHM = 'aes-256-cbc';
+const IV_LENGTH = 16;
+const SALT_LENGTH = 32;
+const KEY_LENGTH = 32;
 
 /**
  * Get encryption key from environment or generate one
@@ -25,7 +23,7 @@ function getEncryptionKey(): string {
  * Derive key from password using PBKDF2
  */
 function deriveKey(password: string, salt: Buffer): Buffer {
-  return crypto.pbkdf2Sync(password, salt, 100000, 32, 'sha256');
+  return crypto.pbkdf2Sync(password, salt, 100000, KEY_LENGTH, 'sha256');
 }
 
 /**
@@ -38,10 +36,19 @@ export function encrypt(text: string): string {
     const iv = crypto.randomBytes(IV_LENGTH);
     const key = deriveKey(password, salt);
 
-    const cipher = crypto.createCipher(ALGORITHM, key);
-    const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+    cipher.setAutoPadding(true);
+    
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
 
-    return Buffer.concat([salt, iv, encrypted]).toString('base64');
+    const result = {
+      salt: salt.toString('hex'),
+      iv: iv.toString('hex'),
+      encrypted: encrypted
+    };
+
+    return Buffer.from(JSON.stringify(result)).toString('base64');
   } catch (error) {
     throw new Error(`Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
@@ -53,16 +60,21 @@ export function encrypt(text: string): string {
 export function decrypt(encryptedData: string): string {
   try {
     const password = getEncryptionKey();
-    const data = Buffer.from(encryptedData, 'base64');
+    const dataStr = Buffer.from(encryptedData, 'base64').toString('utf8');
+    const data = JSON.parse(dataStr);
 
-    const salt = data.subarray(0, SALT_LENGTH);
-    const iv = data.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-    const encrypted = data.subarray(SALT_LENGTH + IV_LENGTH);
+    const salt = Buffer.from(data.salt, 'hex');
+    const iv = Buffer.from(data.iv, 'hex');
+    const encrypted = data.encrypted;
 
     const key = deriveKey(password, salt);
-    const decipher = crypto.createDecipher(ALGORITHM, key);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAutoPadding(true);
 
-    return decipher.update(encrypted, undefined, 'utf8') + decipher.final('utf8');
+    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+
+    return decrypted;
   } catch (error) {
     throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
@@ -87,9 +99,15 @@ export function generateSecureToken(length: number = 32): string {
  */
 export function isEncrypted(data: string): boolean {
   try {
-    // Check if it's valid base64 and has minimum expected length
-    const buffer = Buffer.from(data, 'base64');
-    return buffer.length >= SALT_LENGTH + IV_LENGTH + TAG_LENGTH + 1;
+    // Check if it's valid base64
+    const dataStr = Buffer.from(data, 'base64').toString('utf8');
+    const parsed = JSON.parse(dataStr);
+    
+    // Check if it has the expected structure
+    return parsed && 
+           typeof parsed.salt === 'string' && 
+           typeof parsed.iv === 'string' && 
+           typeof parsed.encrypted === 'string';
   } catch {
     return false;
   }
