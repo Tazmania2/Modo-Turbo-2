@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const instanceId = searchParams.get('instance');
   
-  console.log('POST login attempt - redirecting to headless flow');
+  // Log POST attempt for debugging
+  console.warn('POST login attempt detected - this should use GET redirect instead');
   
   return NextResponse.json(
     { 

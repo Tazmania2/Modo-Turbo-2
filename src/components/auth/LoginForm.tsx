@@ -3,14 +3,10 @@
 import React, { useState } from 'react';
 
 export interface LoginFormProps {
-  onSuccess?: () => void;
-  redirectTo?: string;
   requireAdmin?: boolean;
 }
 
 export function LoginForm({ 
-  onSuccess, 
-  redirectTo = '/dashboard',
   requireAdmin = false 
 }: LoginFormProps) {
   const [credentials, setCredentials] = useState({
@@ -20,9 +16,7 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // No longer using auth context since we redirect to Funifier
-  // const { login, verifyAdmin } = useAuthContext();
-  // const router = useRouter();
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
