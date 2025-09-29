@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { whiteLabelConfigService } from '@/services/white-label-config.service';
+import { whiteLabelConfigCache } from '@/utils/cache';
 
 /**
  * Headless authentication - redirect to Funifier
@@ -10,27 +11,40 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const instanceId = searchParams.get('instance') || 'default';
     
-    // Get Funifier configuration
-    const config = await whiteLabelConfigService.getConfiguration(instanceId);
+    // For headless authentication, we need to get the Funifier URL from cache only
+    // We can't make database calls without authentication (chicken-and-egg problem)
+    console.log(`Attempting login redirect for instance: ${instanceId}`);
     
-    if (!config?.funifierIntegration?.serverUrl) {
-      return NextResponse.json(
-        { error: 'Funifier configuration not found. Please complete setup first.' },
-        { status: 400 }
-      );
+    // Try cache-only first (no database calls)
+    const cachedConfig = whiteLabelConfigCache.getConfiguration(instanceId);
+    
+    if (cachedConfig?.funifierIntegration?.serverUrl) {
+      // Found in cache - use it
+      const returnUrl = `${request.nextUrl.origin}/dashboard?instance=${instanceId}`;
+      const funifierLoginUrl = `${cachedConfig.funifierIntegration.serverUrl}/login?redirect_uri=${encodeURIComponent(returnUrl)}`;
+      
+      console.log(`Redirecting to Funifier login: ${funifierLoginUrl}`);
+      return NextResponse.redirect(funifierLoginUrl);
     }
     
-    // Redirect to Funifier login page
-    const returnUrl = `${request.nextUrl.origin}/dashboard?instance=${instanceId}`;
-    const funifierLoginUrl = `${config.funifierIntegration.serverUrl}/login?redirect_uri=${encodeURIComponent(returnUrl)}`;
+    // If not in cache, we have a problem - setup might not be complete
+    // or the cache was cleared. For now, redirect to a default Funifier URL
+    // or back to setup
+    console.warn(`No cached configuration found for instance: ${instanceId}`);
     
+    // Try to use default Funifier URL from environment
+    const defaultFunifierUrl = process.env.DEFAULT_FUNIFIER_URL || 'https://service2.funifier.com';
+    const returnUrl = `${request.nextUrl.origin}/dashboard?instance=${instanceId}`;
+    const funifierLoginUrl = `${defaultFunifierUrl}/login?redirect_uri=${encodeURIComponent(returnUrl)}`;
+    
+    console.log(`Using default Funifier URL for login: ${funifierLoginUrl}`);
     return NextResponse.redirect(funifierLoginUrl);
+    
   } catch (error) {
     console.error('Failed to redirect to Funifier login:', error);
-    return NextResponse.json(
-      { error: 'Failed to redirect to Funifier login' },
-      { status: 500 }
-    );
+    
+    // Last resort - redirect back to setup
+    return NextResponse.redirect(`${request.nextUrl.origin}/setup?error=login_failed`);
   }
 }
 
