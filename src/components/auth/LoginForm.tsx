@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthContext } from '@/contexts/AuthContext';
 
 export interface LoginFormProps {
   onSuccess?: () => void;
@@ -22,8 +20,9 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { login, verifyAdmin } = useAuthContext();
-  const router = useRouter();
+  // No longer using auth context since we redirect to Funifier
+  // const { login, verifyAdmin } = useAuthContext();
+  // const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
