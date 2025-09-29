@@ -63,27 +63,47 @@ export async function POST(request: NextRequest) {
     // Use the correct Funifier authentication endpoint
     const funifierUrl = `${serverUrl}/v3/auth/token`;
     
+    const payload = {
+      apiKey: apiKey,
+      grant_type: 'password',
+      username: username,
+      password: password,
+    };
+    
     console.log(`Authenticating user ${username} with Funifier at ${funifierUrl}...`);
+    console.log('Payload (API key masked):', {
+      ...payload,
+      apiKey: apiKey ? `${apiKey.substring(0, 8)}...` : 'NOT_FOUND',
+      password: '***HIDDEN***'
+    });
     
     const authResponse = await fetch(funifierUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        apiKey: apiKey,
-        grant_type: 'password',
-        username: username,
-        password: password,
-      }),
+      body: JSON.stringify(payload),
     });
     
     if (!authResponse.ok) {
-      const errorData = await authResponse.json().catch(() => ({}));
-      console.error('Funifier authentication failed:', errorData);
+      const responseText = await authResponse.text();
+      console.error('Funifier authentication failed:');
+      console.error('Status:', authResponse.status, authResponse.statusText);
+      console.error('Response:', responseText);
+      
+      let errorData = {};
+      try {
+        errorData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Could not parse error response as JSON');
+      }
       
       return NextResponse.json(
-        { error: errorData.message || 'Authentication failed' },
+        { 
+          error: errorData.message || errorData.errorMessage || 'Authentication failed',
+          details: responseText,
+          status: authResponse.status
+        },
         { status: 401 }
       );
     }
