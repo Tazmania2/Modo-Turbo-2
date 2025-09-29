@@ -11,10 +11,11 @@ export async function POST(request: NextRequest) {
     // Get the API key from configuration
     let apiKey = '';
     let serverUrl = 'https://service2.funifier.com';
+    let cachedConfig = null;
     
     try {
       const { whiteLabelConfigCache } = await import('@/utils/cache');
-      const cachedConfig = whiteLabelConfigCache.getConfiguration(instanceId);
+      cachedConfig = whiteLabelConfigCache.getConfiguration(instanceId);
       
       if (cachedConfig?.funifierIntegration?.apiKey) {
         apiKey = cachedConfig.funifierIntegration.apiKey;

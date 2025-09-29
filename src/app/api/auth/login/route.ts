@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       console.error('Status:', authResponse.status, authResponse.statusText);
       console.error('Response:', responseText);
       
-      let errorData = {};
+      let errorData: any = {};
       try {
         errorData = JSON.parse(responseText);
       } catch (parseError) {
