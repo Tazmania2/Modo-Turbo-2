@@ -54,8 +54,22 @@ export async function POST(request: NextRequest) {
     }
     
     if (!apiKey) {
+      console.error('No API key found for instance:', instanceId);
       return NextResponse.json(
-        { error: 'Funifier API key not configured. Please complete setup first.' },
+        { 
+          error: 'Funifier API key not configured. Please complete setup first.',
+          instanceId: instanceId,
+          needsSetup: true
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate API key format (basic check)
+    if (apiKey.length < 10) {
+      console.error('API key appears to be invalid (too short):', apiKey.length);
+      return NextResponse.json(
+        { error: 'Invalid API key format. Please check your Funifier configuration.' },
         { status: 400 }
       );
     }
@@ -63,46 +77,93 @@ export async function POST(request: NextRequest) {
     // Use the correct Funifier authentication endpoint
     const funifierUrl = `${serverUrl}/v3/auth/token`;
     
-    const payload = {
+    // Validate the endpoint URL format
+    if (!funifierUrl.includes('/v3/auth/token')) {
+      console.error('Invalid auth endpoint URL:', funifierUrl);
+      return NextResponse.json(
+        { error: 'Invalid Funifier server configuration' },
+        { status: 500 }
+      );
+    }
+    
+    console.log(`Authenticating user ${username} with Funifier at ${funifierUrl}...`);
+    console.log('API Key available:', apiKey ? 'YES' : 'NO');
+    console.log('Server URL:', serverUrl);
+    
+    // Create URL-encoded body as per Funifier documentation
+    // CRITICAL: Do not send any Authorization headers to /v3/auth/token
+    const urlEncodedBody = new URLSearchParams({
       apiKey: apiKey,
       grant_type: 'password',
       username: username,
       password: password,
-    };
+    }).toString();
     
-    console.log(`Authenticating user ${username} with Funifier at ${funifierUrl}...`);
-    console.log('Payload (API key masked):', {
-      ...payload,
+    console.log('Request body (credentials masked):', {
       apiKey: apiKey ? `${apiKey.substring(0, 8)}...` : 'NOT_FOUND',
+      grant_type: 'password',
+      username: username,
       password: '***HIDDEN***'
     });
     
+    // Headers for initial auth request - CRITICAL: NO Authorization header
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    };
+    
+    // Double-check we're not accidentally including auth headers
+    if ('authorization' in headers || 'Authorization' in headers) {
+      console.error('CRITICAL ERROR: Authorization header found in auth request!');
+      return NextResponse.json(
+        { error: 'Internal error: Invalid request headers' },
+        { status: 500 }
+      );
+    }
+    
+    console.log('Making auth request to:', funifierUrl);
+    console.log('Headers (verified no auth):', headers);
+    console.log('Body length:', urlEncodedBody.length);
+    
     const authResponse = await fetch(funifierUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      headers: headers,
+      body: urlEncodedBody,
     });
     
     if (!authResponse.ok) {
       const responseText = await authResponse.text();
-      console.error('Funifier authentication failed:');
-      console.error('Status:', authResponse.status, authResponse.statusText);
-      console.error('Response:', responseText);
+      console.error('=== FUNIFIER AUTH FAILED ===');
+      console.error('Request URL:', funifierUrl);
+      console.error('Request Method:', 'POST');
+      console.error('Request Headers:', headers);
+      console.error('Request Body:', urlEncodedBody);
+      console.error('Response Status:', authResponse.status, authResponse.statusText);
+      console.error('Response Headers:', Object.fromEntries(authResponse.headers.entries()));
+      console.error('Response Body:', responseText);
+      console.error('=== END DEBUG INFO ===');
       
       let errorData: any = {};
       try {
         errorData = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('Could not parse error response as JSON');
+        console.error('Could not parse error response as JSON:', parseError);
       }
+      
+      // Check for the specific auth error message
+      const isAuthTypeError = responseText.includes('Need to inform a type of authentication');
       
       return NextResponse.json(
         { 
           error: errorData.message || errorData.errorMessage || 'Authentication failed',
           details: responseText,
-          status: authResponse.status
+          status: authResponse.status,
+          isAuthTypeError,
+          debugInfo: {
+            url: funifierUrl,
+            hasApiKey: !!apiKey,
+            bodyLength: urlEncodedBody.length
+          }
         },
         { status: 401 }
       );
