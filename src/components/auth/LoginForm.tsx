@@ -35,27 +35,16 @@ export function LoginForm({
       const urlParams = new URLSearchParams(window.location.search);
       const instanceId = urlParams.get('instance');
       
-      // Attempt login
-      await login(credentials, instanceId);
-
-      // Verify admin role if required
-      if (requireAdmin) {
-        const isAdmin = await verifyAdmin();
-        if (!isAdmin) {
-          setError('Admin access required');
-          return;
-        }
-      }
-
-      // Success callback
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        router.push(redirectTo);
-      }
+      // For headless mode, redirect to Funifier login
+      const loginUrl = instanceId 
+        ? `/api/auth/login?instance=${instanceId}`
+        : '/api/auth/login';
+      
+      // Redirect to Funifier login
+      window.location.href = loginUrl;
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
-    } finally {
       setIsLoading(false);
     }
   };
