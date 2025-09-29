@@ -28,13 +28,28 @@ export function LoginForm({
       const urlParams = new URLSearchParams(window.location.search);
       const instanceId = urlParams.get('instance');
       
-      // For headless mode, redirect directly to Funifier
-      const defaultFunifierUrl = 'https://service2.funifier.com';
-      const returnUrl = `${window.location.origin}/dashboard${instanceId ? `?instance=${instanceId}` : ''}`;
-      const funifierLoginUrl = `${defaultFunifierUrl}/login?redirect_uri=${encodeURIComponent(returnUrl)}`;
-      
-      // Redirect directly to Funifier login
-      window.location.href = funifierLoginUrl;
+      // Use the proper authentication API
+      const loginUrl = instanceId 
+        ? `/api/auth/login?instance=${instanceId}`
+        : '/api/auth/login';
+
+      const response = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(credentials),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Login failed');
+      }
+
+      // Success - redirect to dashboard
+      const redirectTo = instanceId ? `/dashboard?instance=${instanceId}` : '/dashboard';
+      window.location.href = redirectTo;
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

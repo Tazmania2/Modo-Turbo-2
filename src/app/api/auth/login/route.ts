@@ -5,34 +5,15 @@ import { NextRequest, NextResponse } from 'next/server';
  * This app should not handle authentication directly
  */
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const instanceId = searchParams.get('instance') || 'default';
+  // GET requests should redirect to login page, not handle authentication
+  const { searchParams } = new URL(request.url);
+  const instanceId = searchParams.get('instance');
+  
+  const loginPageUrl = instanceId 
+    ? `/admin/login?instance=${instanceId}`
+    : '/admin/login';
     
-    console.log(`Login redirect requested for instance: ${instanceId}`);
-    
-    // Completely headless approach - use default Funifier URL
-    // Don't try to get any stored configuration to avoid authentication issues
-    const defaultFunifierUrl = process.env.DEFAULT_FUNIFIER_URL || 'https://service2.funifier.com';
-    const returnUrl = `${request.nextUrl.origin}/dashboard?instance=${instanceId}`;
-    const funifierLoginUrl = `${defaultFunifierUrl}/login?redirect_uri=${encodeURIComponent(returnUrl)}`;
-    
-    console.log(`Redirecting to Funifier login: ${funifierLoginUrl}`);
-    return NextResponse.redirect(funifierLoginUrl);
-    
-  } catch (error) {
-    console.error('Failed to redirect to Funifier login:', error);
-    
-    // Return JSON error instead of redirect to see what's happening
-    return NextResponse.json(
-      { 
-        error: 'Failed to redirect to Funifier login',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        instanceId: request.nextUrl.searchParams.get('instance')
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.redirect(`${request.nextUrl.origin}${loginPageUrl}`);
 }
 
 /**
@@ -40,18 +21,73 @@ export async function GET(request: NextRequest) {
  * Return error with guidance to use Funifier directly
  */
 export async function POST(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const instanceId = searchParams.get('instance');
-  
-  // Log POST attempt for debugging
-  console.warn('POST login attempt detected - this should use GET redirect instead');
-  
-  return NextResponse.json(
-    { 
-      error: 'This app uses Funifier authentication. Please login through Funifier directly.',
-      message: 'Redirecting to Funifier login...',
-      redirectTo: instanceId ? `/api/auth/login?instance=${instanceId}` : '/api/auth/login'
-    },
-    { status: 302 }
-  );
+  try {
+    const { searchParams } = new URL(request.url);
+    const instanceId = searchParams.get('instance') || 'default';
+    
+    const body = await request.json();
+    const { username, password } = body;
+    
+    if (!username || !password) {
+      return NextResponse.json(
+        { error: 'Username and password are required' },
+        { status: 400 }
+      );
+    }
+    
+    // Use the correct Funifier authentication endpoint
+    const funifierUrl = 'https://service2.funifier.com/v3/auth/basic';
+    
+    console.log(`Authenticating user ${username} with Funifier...`);
+    
+    const authResponse = await fetch(funifierUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username,
+        password,
+      }),
+    });
+    
+    if (!authResponse.ok) {
+      const errorData = await authResponse.json().catch(() => ({}));
+      console.error('Funifier authentication failed:', errorData);
+      
+      return NextResponse.json(
+        { error: errorData.message || 'Authentication failed' },
+        { status: 401 }
+      );
+    }
+    
+    const authData = await authResponse.json();
+    console.log('Funifier authentication successful');
+    
+    // Create session cookie with the bearer token
+    const response = NextResponse.json({
+      success: true,
+      message: 'Authentication successful'
+    });
+    
+    // Set HTTP-only cookie with access token
+    if (authData.access_token) {
+      response.cookies.set('auth_token', authData.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: authData.expires_in || 3600, // Default 1 hour
+        path: '/',
+      });
+    }
+    
+    return response;
+    
+  } catch (error) {
+    console.error('Login API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error during login' },
+      { status: 500 }
+    );
+  }
 }
