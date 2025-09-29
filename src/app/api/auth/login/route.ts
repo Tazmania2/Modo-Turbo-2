@@ -35,10 +35,35 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Use the correct Funifier authentication endpoint
-    const funifierUrl = 'https://service2.funifier.com/v3/auth/basic';
+    // Get the API key from configuration (we need this for Funifier auth)
+    // For now, we'll try to get it from cache or use a default approach
+    let apiKey = '';
+    let serverUrl = 'https://service2.funifier.com';
     
-    console.log(`Authenticating user ${username} with Funifier...`);
+    try {
+      // Try to get from cache first (no database calls to avoid auth issues)
+      const { whiteLabelConfigCache } = await import('@/utils/cache');
+      const cachedConfig = whiteLabelConfigCache.getConfiguration(instanceId);
+      
+      if (cachedConfig?.funifierIntegration?.apiKey) {
+        apiKey = cachedConfig.funifierIntegration.apiKey;
+        serverUrl = cachedConfig.funifierIntegration.serverUrl || serverUrl;
+      }
+    } catch (cacheError) {
+      console.warn('Could not get API key from cache:', cacheError);
+    }
+    
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Funifier API key not configured. Please complete setup first.' },
+        { status: 400 }
+      );
+    }
+    
+    // Use the correct Funifier authentication endpoint
+    const funifierUrl = `${serverUrl}/v3/auth/token`;
+    
+    console.log(`Authenticating user ${username} with Funifier at ${funifierUrl}...`);
     
     const authResponse = await fetch(funifierUrl, {
       method: 'POST',
@@ -46,8 +71,10 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        username,
-        password,
+        apiKey: apiKey,
+        grant_type: 'password',
+        username: username,
+        password: password,
       }),
     });
     
@@ -67,7 +94,9 @@ export async function POST(request: NextRequest) {
     // Create session cookie with the bearer token
     const response = NextResponse.json({
       success: true,
-      message: 'Authentication successful'
+      message: 'Authentication successful',
+      token_type: authData.token_type,
+      expires_in: authData.expires_in
     });
     
     // Set HTTP-only cookie with access token
@@ -76,7 +105,7 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: authData.expires_in || 3600, // Default 1 hour
+        maxAge: Math.floor(authData.expires_in / 1000) || 3600, // Convert to seconds
         path: '/',
       });
     }
