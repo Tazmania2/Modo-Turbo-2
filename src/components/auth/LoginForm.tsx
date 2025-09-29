@@ -28,13 +28,13 @@ export function LoginForm({
       const urlParams = new URLSearchParams(window.location.search);
       const instanceId = urlParams.get('instance');
       
-      // For headless mode, redirect to Funifier login
-      const loginUrl = instanceId 
-        ? `/api/auth/login?instance=${instanceId}`
-        : '/api/auth/login';
+      // For headless mode, redirect directly to Funifier
+      const defaultFunifierUrl = 'https://service2.funifier.com';
+      const returnUrl = `${window.location.origin}/dashboard${instanceId ? `?instance=${instanceId}` : ''}`;
+      const funifierLoginUrl = `${defaultFunifierUrl}/login?redirect_uri=${encodeURIComponent(returnUrl)}`;
       
-      // Redirect to Funifier login
-      window.location.href = loginUrl;
+      // Redirect directly to Funifier login
+      window.location.href = funifierLoginUrl;
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

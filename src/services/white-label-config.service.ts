@@ -305,7 +305,7 @@ export class WhiteLabelConfigService {
           return {
             success: true,
             instanceId: actualInstanceId,
-            redirectUrl: `/api/auth/login?instance=${actualInstanceId}`
+            redirectUrl: `/admin/login?instance=${actualInstanceId}`
           };
         } else {
           return {

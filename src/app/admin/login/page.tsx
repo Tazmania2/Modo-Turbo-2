@@ -9,19 +9,23 @@ function AdminLoginContent() {
 
   // Redirect to Funifier login immediately
   React.useEffect(() => {
-    const redirectToFunifier = async () => {
+    const redirectToFunifier = () => {
       try {
-        const loginUrl = instanceId 
-          ? `/api/auth/login?instance=${instanceId}`
-          : '/api/auth/login';
-        
-        window.location.href = loginUrl;
+        // Direct redirect to default Funifier without any API calls
+        const defaultFunifierUrl = 'https://service2.funifier.com';
+        const returnUrl = `${window.location.origin}/dashboard${instanceId ? `?instance=${instanceId}` : ''}`;
+        const funifierLoginUrl = `${defaultFunifierUrl}/login?redirect_uri=${encodeURIComponent(returnUrl)}`;
+
+        console.log('Direct redirect to Funifier:', funifierLoginUrl);
+        window.location.href = funifierLoginUrl;
       } catch (error) {
         console.error('Failed to redirect to Funifier:', error);
       }
     };
 
-    redirectToFunifier();
+    // Small delay to show the loading screen
+    const timer = setTimeout(redirectToFunifier, 1000);
+    return () => clearTimeout(timer);
   }, [instanceId]);
 
   return (
@@ -45,8 +49,14 @@ function AdminLoginContent() {
             <p className="text-sm text-blue-800 mb-2">
               If you&apos;re not redirected automatically:
             </p>
-            <a 
-              href={instanceId ? `/api/auth/login?instance=${instanceId}` : '/api/auth/login'}
+            <a
+              href="#"
+              onClick={() => {
+                const defaultFunifierUrl = 'https://service2.funifier.com';
+                const returnUrl = `${window.location.origin}/dashboard${instanceId ? `?instance=${instanceId}` : ''}`;
+                const funifierLoginUrl = `${defaultFunifierUrl}/login?redirect_uri=${encodeURIComponent(returnUrl)}`;
+                window.location.href = funifierLoginUrl;
+              }}
               className="text-blue-600 hover:text-blue-800 underline text-sm"
             >
               Click here to login with Funifier
