@@ -43,7 +43,7 @@ function AdminLoginContent() {
           {/* Manual redirect link */}
           <div className="mt-6 bg-blue-50 rounded-lg p-4">
             <p className="text-sm text-blue-800 mb-2">
-              If you're not redirected automatically:
+              If you&apos;re not redirected automatically:
             </p>
             <a 
               href={instanceId ? `/api/auth/login?instance=${instanceId}` : '/api/auth/login'}
