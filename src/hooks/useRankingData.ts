@@ -5,6 +5,7 @@ import {
   GlobalRankingResponse
 } from '@/services/ranking-leaderboard.service';
 import { RankingDashboardData } from '@/services/ranking-integration.service';
+import { getApiEndpoint } from '@/utils/demo';
 
 interface UseRankingDataOptions {
   playerId?: string;
@@ -72,13 +73,20 @@ export function useRankingData(options: UseRankingDataOptions = {}): UseRankingD
     setLeaderboardsError(null);
     
     try {
-      const response = await fetch('/api/ranking/leaderboards?refresh=true');
+      const endpoint = getApiEndpoint('/api/ranking/leaderboards?refresh=true');
+      const response = await fetch(endpoint);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
-      setLeaderboards(data);
+      
+      // Handle demo mode response format
+      if (data.leaderboards) {
+        setLeaderboards({ leaderboards: data.leaderboards });
+      } else {
+        setLeaderboards(data);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leaderboards';
       setLeaderboardsError(errorMessage);
@@ -90,21 +98,35 @@ export function useRankingData(options: UseRankingDataOptions = {}): UseRankingD
 
   // Fetch personal ranking
   const refreshPersonalRanking = useCallback(async () => {
-    if (!playerId || !leaderboardId) return;
+    if (!playerId) return;
     
     setIsLoadingPersonalRanking(true);
     setPersonalRankingError(null);
     
     try {
-      const response = await fetch(
-        `/api/ranking/${leaderboardId}/personal/${playerId}?refresh=true`
-      );
+      const endpoint = getApiEndpoint(`/api/ranking/${leaderboardId || 'demo'}/personal/${playerId}?refresh=true`);
+      const response = await fetch(endpoint);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
-      setPersonalRanking(data);
+      
+      // Handle demo mode response format
+      if (data.personalCard) {
+        setPersonalRanking({
+          raceData: data.raceVisualization || null,
+          personalCard: data.personalCard,
+          topThree: data.players?.slice(0, 3) || [],
+          contextualRanking: data.contextualRanking || {
+            above: null,
+            current: data.personalCard,
+            below: null
+          }
+        });
+      } else {
+        setPersonalRanking(data);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch personal ranking';
       setPersonalRankingError(errorMessage);
@@ -116,19 +138,27 @@ export function useRankingData(options: UseRankingDataOptions = {}): UseRankingD
 
   // Fetch global ranking
   const refreshGlobalRanking = useCallback(async () => {
-    if (!leaderboardId) return;
-    
     setIsLoadingGlobalRanking(true);
     setGlobalRankingError(null);
     
     try {
-      const response = await fetch(`/api/ranking/${leaderboardId}/global?refresh=true`);
+      const endpoint = getApiEndpoint(`/api/ranking/${leaderboardId || 'demo'}/global?refresh=true`);
+      const response = await fetch(endpoint);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
-      setGlobalRanking(data);
+      
+      // Handle demo mode response format
+      if (data.players) {
+        setGlobalRanking({
+          raceData: data.raceVisualization || null,
+          fullRanking: data.players
+        });
+      } else {
+        setGlobalRanking(data);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch global ranking';
       setGlobalRankingError(errorMessage);
@@ -146,10 +176,12 @@ export function useRankingData(options: UseRankingDataOptions = {}): UseRankingD
     setDashboardError(null);
     
     try {
-      const url = new URL(`/api/ranking/dashboard/${playerId}`, window.location.origin);
+      const baseEndpoint = `/api/ranking/dashboard/${playerId}`;
+      const url = new URL(getApiEndpoint(baseEndpoint), window.location.origin);
       if (leaderboardId) {
         url.searchParams.set('leaderboardId', leaderboardId);
       }
+      url.searchParams.set('playerId', playerId);
       url.searchParams.set('refresh', 'true');
       
       const response = await fetch(url.toString());
@@ -158,7 +190,34 @@ export function useRankingData(options: UseRankingDataOptions = {}): UseRankingD
       }
       
       const data = await response.json();
-      setDashboardData(data);
+      
+      // Handle demo mode response format
+      if (data.raceVisualization || data.contextualRanking) {
+        setDashboardData({
+          leaderboards: data.leaderboards || [],
+          activeLeaderboard: null,
+          personalRanking: data.personalCard ? {
+            raceData: data.raceVisualization || null,
+            personalCard: data.personalCard,
+            topThree: data.players?.slice(0, 3) || [],
+            contextualRanking: data.contextualRanking || {
+              above: null,
+              current: data.personalCard,
+              below: null
+            }
+          } : null,
+          globalRanking: data.players ? {
+            raceData: data.raceVisualization || null,
+            fullRanking: data.players
+          } : null,
+          processedData: null,
+          lastUpdated: new Date(),
+          isLoading: false,
+          error: null
+        });
+      } else {
+        setDashboardData(data);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dashboard data';
       setDashboardError(errorMessage);

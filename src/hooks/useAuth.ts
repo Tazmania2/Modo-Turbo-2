@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FunifierPlayerStatus } from '@/types/funifier';
+import { setDemoMode } from '@/utils/demo';
 
 export interface AuthState {
   user: FunifierPlayerStatus | null;
@@ -98,6 +99,9 @@ export function useAuth(): UseAuthReturn {
             extra: {},
             pointCategories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 }
           };
+
+          // Set demo mode flag
+          setDemoMode(true);
 
           setState({
             user: demoUser,

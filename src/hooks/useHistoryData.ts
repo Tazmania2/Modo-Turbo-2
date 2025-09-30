@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HistoryData, Season } from '../types/dashboard';
+import { getApiEndpoint } from '@/utils/demo';
 
 interface UseHistoryDataReturn {
   historyData: HistoryData | null;
@@ -31,7 +32,8 @@ export function useHistoryData(playerId: string): UseHistoryDataReturn {
     setError(null);
 
     try {
-      const response = await fetch(`/api/dashboard/history/${playerId}`, {
+      const endpoint = getApiEndpoint(`/api/dashboard/history/${playerId}`);
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -44,14 +46,25 @@ export function useHistoryData(playerId: string): UseHistoryDataReturn {
         throw new Error(errorData.message || 'Failed to fetch history data');
       }
 
-      const data: HistoryData = await response.json();
+      const data = await response.json();
+      
+      // Handle demo mode response format
+      let historyData: HistoryData;
+      if (data.seasonHistory && data.performanceGraphs) {
+        historyData = {
+          seasons: data.seasonHistory || [],
+          currentSeasonGraphs: data.performanceGraphs || []
+        };
+      } else {
+        historyData = data as HistoryData;
+      }
       
       // Handle case when no data is available (requirement 3.4)
-      if (data.seasons.length === 0 && data.currentSeasonGraphs.length === 0) {
+      if (historyData.seasons?.length === 0 && historyData.currentSeasonGraphs?.length === 0) {
         setError('No historical data available for this player');
       }
 
-      setHistoryData(data);
+      setHistoryData(historyData);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
@@ -72,7 +85,8 @@ export function useHistoryData(playerId: string): UseHistoryDataReturn {
     setError(null);
 
     try {
-      const response = await fetch(`/api/dashboard/season/${seasonId}/${playerId}`, {
+      const endpoint = getApiEndpoint(`/api/dashboard/season/${seasonId}/${playerId}`);
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

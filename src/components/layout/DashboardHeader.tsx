@@ -3,6 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui';
 import { Badge } from '@/components/ui';
+import { isDemoMode, exitDemoMode } from '@/utils/demo';
 
 interface DashboardHeaderProps {
   playerName?: string;
@@ -13,6 +14,16 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   playerName,
   totalPoints
 }) => {
+  const isDemo = isDemoMode();
+
+  const handleSetupClick = () => {
+    window.location.href = '/setup';
+  };
+
+  const handleExitDemo = () => {
+    exitDemoMode();
+  };
+
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,9 +36,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               </h1>
             </div>
             {/* Demo mode indicator */}
-            <Badge variant="warning" size="sm" className="hidden sm:inline-flex">
-              Demo Mode
-            </Badge>
+            {isDemo && (
+              <Badge variant="warning" size="sm" className="hidden sm:inline-flex">
+                Demo Mode
+              </Badge>
+            )}
           </div>
 
           {/* Center - Player info (desktop) */}
@@ -54,40 +67,57 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               </Badge>
             )}
             
-            {/* Setup button for demo mode */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.href = '/setup'}
-              className="hidden sm:inline-flex"
-              title="Configure Funifier Integration"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Setup
-            </Button>
+            {/* Setup/Exit Demo button */}
+            {isDemo ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExitDemo}
+                className="hidden sm:inline-flex"
+                title="Exit Demo Mode and Configure Funifier"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Exit Demo
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSetupClick}
+                className="hidden sm:inline-flex"
+                title="Configure Funifier Integration"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Setup
+              </Button>
+            )}
             
             {/* Mobile menu button */}
             <Button
               variant="ghost"
               size="sm"
               className="md:hidden"
-              aria-label="Open menu"
+              onClick={isDemo ? handleExitDemo : handleSetupClick}
+              aria-label="Settings"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </Button>
 
-            {/* Profile/Settings */}
+            {/* Settings gear icon */}
             <Button
               variant="ghost"
               size="sm"
               className="hidden md:inline-flex"
-              onClick={() => window.location.href = '/setup'}
-              title="Settings"
+              onClick={isDemo ? handleExitDemo : handleSetupClick}
+              title={isDemo ? "Exit Demo Mode" : "Settings"}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
