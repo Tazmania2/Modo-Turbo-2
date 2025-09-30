@@ -25,6 +25,48 @@ export class DemoDataService {
   }
 
   /**
+   * Check if the app is running in demo mode
+   */
+  isDemoMode(): boolean {
+    // Check if we're in development mode or if demo mode is explicitly enabled
+    return process.env.NODE_ENV === 'development' || 
+           process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ||
+           !process.env.FUNIFIER_API_KEY ||
+           process.env.FUNIFIER_API_KEY === 'demo';
+  }
+
+  /**
+   * Simulate demo authentication
+   */
+  async authenticateDemo(username: string, password: string): Promise<{ 
+    access_token: string; 
+    token_type: string;
+    expires_in: number;
+    user_type: 'admin' | 'player';
+  }> {
+    // Simple demo authentication - accept specific demo credentials
+    const validCredentials = {
+      'demo': { password: 'demo', type: 'player' as const },
+      'admin': { password: 'admin', type: 'admin' as const },
+      'player1': { password: 'demo', type: 'player' as const },
+      'player2': { password: 'demo', type: 'player' as const }
+    };
+
+    const credential = validCredentials[username as keyof typeof validCredentials];
+    
+    if (!credential || credential.password !== password) {
+      throw new Error('Invalid demo credentials. Use "demo/demo", "admin/admin", or "player1/demo"');
+    }
+
+    return {
+      access_token: `demo_token_${username}_${Date.now()}`,
+      token_type: 'Bearer',
+      expires_in: 3600,
+      user_type: credential.type
+    };
+  }
+
+  /**
    * Generate demo players with realistic data
    */
   generatePlayers(count: number = 50): Player[] {

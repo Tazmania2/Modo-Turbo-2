@@ -129,6 +129,12 @@ export class SetupService {
    */
   async needsSetup(instanceId?: string): Promise<boolean> {
     try {
+      // If we're in demo mode, no setup is needed
+      if (demoDataService.isDemoMode()) {
+        console.log('Demo mode detected, no setup needed');
+        return false;
+      }
+
       if (!instanceId) {
         console.log('No instance ID provided, setup needed');
         return true; // No instance ID means fresh setup
@@ -136,12 +142,59 @@ export class SetupService {
 
       console.log(`Checking setup status for instance: ${instanceId}`);
       const config = await whiteLabelConfigService.getConfiguration(instanceId);
-      const needsSetup = !config;
+      const needsSetup = !config || !config.funifierIntegration?.isConfigured;
       console.log(`Setup needed for ${instanceId}: ${needsSetup}`);
       return needsSetup; // No configuration means setup needed
     } catch (error) {
       console.error('Error checking setup status:', error);
       return true; // Assume setup needed on error
+    }
+  }
+
+  /**
+   * Validate Funifier server URL format
+   */
+  validateFunifierUrl(url: string): { isValid: boolean; normalizedUrl?: string; error?: string } {
+    try {
+      // Basic URL validation
+      const urlObj = new URL(url);
+      
+      // Must be HTTPS for production
+      if (urlObj.protocol !== 'https:' && process.env.NODE_ENV === 'production') {
+        return {
+          isValid: false,
+          error: 'HTTPS is required for production environments'
+        };
+      }
+
+      // Must be a Funifier domain
+      if (!urlObj.hostname.includes('funifier.com')) {
+        return {
+          isValid: false,
+          error: 'URL must be a valid Funifier domain (*.funifier.com)'
+        };
+      }
+
+      // Normalize the URL to ensure it ends with /v3
+      let normalizedUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+      
+      // Remove trailing slashes
+      normalizedUrl = normalizedUrl.replace(/\/+$/, '');
+      
+      // Ensure it ends with /v3
+      if (!normalizedUrl.endsWith('/v3')) {
+        normalizedUrl += '/v3';
+      }
+
+      return {
+        isValid: true,
+        normalizedUrl
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        error: 'Invalid URL format'
+      };
     }
   }
 

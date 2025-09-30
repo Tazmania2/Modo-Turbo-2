@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { demoDataService } from '@/services/demo-data.service';
 
 /**
  * Headless authentication - redirect to Funifier
@@ -34,11 +35,52 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Check if we're in demo mode
+    if (demoDataService.isDemoMode()) {
+      console.log('🎭 Demo mode - authenticating user:', username);
+      
+      try {
+        const demoAuth = await demoDataService.authenticateDemo(username, password);
+        console.log('🎭 Demo authentication successful');
+        
+        // Create session cookie with the demo token
+        const response = NextResponse.json({
+          success: true,
+          message: 'Demo authentication successful',
+          token_type: demoAuth.token_type,
+          expires_in: demoAuth.expires_in,
+          user_type: demoAuth.user_type,
+          isDemoMode: true
+        });
+        
+        // Set HTTP-only cookie with access token
+        response.cookies.set('auth_token', demoAuth.access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: demoAuth.expires_in,
+          path: '/',
+        });
+        
+        return response;
+      } catch (demoError) {
+        console.log('🎭 Demo authentication failed:', demoError);
+        return NextResponse.json(
+          { 
+            error: demoError instanceof Error ? demoError.message : 'Invalid demo credentials',
+            isDemoMode: true,
+            availableCredentials: ['demo/demo', 'admin/admin', 'player1/demo']
+          },
+          { status: 401 }
+        );
+      }
+    }
     
     // Get the API key from configuration (we need this for Funifier auth)
     // For now, we'll try to get it from cache or use a default approach
     let apiKey = '';
-    let serverUrl = 'https://service2.funifier.com';
+    let serverUrl = 'https://service2.funifier.com/v3';
     
     try {
       // Try to get from cache first (no database calls to avoid auth issues)
@@ -47,7 +89,12 @@ export async function POST(request: NextRequest) {
       
       if (cachedConfig?.funifierIntegration?.apiKey) {
         apiKey = cachedConfig.funifierIntegration.apiKey;
-        serverUrl = cachedConfig.funifierIntegration.serverUrl || serverUrl;
+        let configServerUrl = cachedConfig.funifierIntegration.serverUrl || 'https://service2.funifier.com/v3';
+        // Ensure the URL always ends with /v3
+        if (!configServerUrl.endsWith('/v3')) {
+          configServerUrl = configServerUrl.replace(/\/+$/, '') + '/v3';
+        }
+        serverUrl = configServerUrl;
       }
     } catch (cacheError) {
       console.warn('Could not get API key from cache:', cacheError);
@@ -75,13 +122,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Use the correct Funifier authentication endpoint
-    const funifierUrl = `${serverUrl}/v3/auth/token`;
+    const funifierUrl = `${serverUrl}/auth/token`;
     
     // Validate the endpoint URL format
     if (!funifierUrl.includes('/v3/auth/token')) {
       console.error('Invalid auth endpoint URL:', funifierUrl);
       return NextResponse.json(
-        { error: 'Invalid Funifier server configuration' },
+        { error: 'Invalid Funifier server configuration. URL must include /v3/auth/token' },
         { status: 500 }
       );
     }
