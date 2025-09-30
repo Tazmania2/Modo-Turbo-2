@@ -129,25 +129,30 @@ export class SetupService {
    */
   async needsSetup(instanceId?: string): Promise<boolean> {
     try {
-      // If we're in demo mode, no setup is needed
-      if (demoDataService.isDemoMode()) {
-        console.log('Demo mode detected, no setup needed');
-        return false;
+      // Check if demo data is available (indicates demo mode is possible)
+      try {
+        const demoCheck = await fetch('/api/demo-data');
+        if (demoCheck.ok) {
+          console.log('Demo mode available, setup not strictly required');
+          // Demo mode is available, but still check if Funifier is configured
+        }
+      } catch (demoError) {
+        console.log('Demo mode not available');
       }
 
       if (!instanceId) {
-        console.log('No instance ID provided, setup needed');
-        return true; // No instance ID means fresh setup
+        console.log('No instance ID provided, setup available');
+        return false; // Allow access to demo mode even without instance ID
       }
 
       console.log(`Checking setup status for instance: ${instanceId}`);
       const config = await whiteLabelConfigService.getConfiguration(instanceId);
       const needsSetup = !config || !config.funifierIntegration?.apiKey;
       console.log(`Setup needed for ${instanceId}: ${needsSetup}`);
-      return needsSetup; // No configuration means setup needed
+      return false; // Always allow access, setup is optional with demo mode
     } catch (error) {
       console.error('Error checking setup status:', error);
-      return true; // Assume setup needed on error
+      return false; // Allow access to demo mode even on error
     }
   }
 

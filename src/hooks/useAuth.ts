@@ -69,6 +69,103 @@ export function useAuth(): UseAuthReturn {
           roles,
         });
       } else {
+        // Check if we're in demo mode
+        const demoResponse = await fetch('/api/demo-data', {
+          method: 'GET',
+        });
+
+        if (demoResponse.ok) {
+          // Create a demo user for demo mode
+          const demoUser: FunifierPlayerStatus = {
+            _id: 'demo_user_1',
+            name: 'Demo User',
+            total_challenges: 15,
+            challenges: { 'daily_tasks': 8, 'weekly_goals': 4, 'special_events': 3 },
+            total_points: 2450,
+            point_categories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 },
+            total_catalog_items: 5,
+            catalog_items: { 'badges': 3, 'rewards': 2 },
+            level_progress: {
+              percent_completed: 75,
+              next_points: 550,
+              total_levels: 10,
+              percent: 75
+            },
+            challenge_progress: [],
+            teams: ['demo_team'],
+            positions: [],
+            time: Date.now(),
+            extra: {},
+            pointCategories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 }
+          };
+
+          setState({
+            user: demoUser,
+            isAuthenticated: true,
+            isLoading: false,
+            isAdmin: false,
+            roles: ['demo_user'],
+          });
+        } else {
+          setState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            isAdmin: false,
+            roles: [],
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      
+      // Fallback to demo mode if available
+      try {
+        const demoResponse = await fetch('/api/demo-data', {
+          method: 'GET',
+        });
+
+        if (demoResponse.ok) {
+          const demoUser: FunifierPlayerStatus = {
+            _id: 'demo_user_1',
+            name: 'Demo User',
+            total_challenges: 15,
+            challenges: { 'daily_tasks': 8, 'weekly_goals': 4, 'special_events': 3 },
+            total_points: 2450,
+            point_categories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 },
+            total_catalog_items: 5,
+            catalog_items: { 'badges': 3, 'rewards': 2 },
+            level_progress: {
+              percent_completed: 75,
+              next_points: 550,
+              total_levels: 10,
+              percent: 75
+            },
+            challenge_progress: [],
+            teams: ['demo_team'],
+            positions: [],
+            time: Date.now(),
+            extra: {},
+            pointCategories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 }
+          };
+
+          setState({
+            user: demoUser,
+            isAuthenticated: true,
+            isLoading: false,
+            isAdmin: false,
+            roles: ['demo_user'],
+          });
+        } else {
+          setState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            isAdmin: false,
+            roles: [],
+          });
+        }
+      } catch (demoError) {
         setState({
           user: null,
           isAuthenticated: false,
@@ -77,15 +174,6 @@ export function useAuth(): UseAuthReturn {
           roles: [],
         });
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        isAdmin: false,
-        roles: [],
-      });
     }
   }, []);
 

@@ -29,14 +29,22 @@ export default function RankingPage() {
               Authentication Required
             </h1>
             <p className="text-gray-600 mb-4">
-              Please log in to view your ranking information.
+              Please log in to view your ranking information, or try the demo mode.
             </p>
-            <a
-              href="/admin/login"
-              className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Go to Login
-            </a>
+            <div className="space-y-2">
+              <a
+                href="/admin/login"
+                className="inline-block w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Go to Login
+              </a>
+              <a
+                href="/setup"
+                className="inline-block w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Setup Demo Mode
+              </a>
+            </div>
           </CardContent>
         </Card>
       </div>
