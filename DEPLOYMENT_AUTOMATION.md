@@ -5,31 +5,23 @@ This document describes the Vercel deployment automation system implemented for 
 ## Overview
 
 The deployment automation system provides:
+
 - Automated deployment triggers
 - Environment variable management
-- Deployment verification
-- Rollback capabilities
-- Integration with white-label configuration
-
-## Environment Variables
-
-### Required Variables
-
-```bash
-# Vercel API Configuration
-VERCEL_TOKEN=your_vercel_token_here
-VERCEL_PROJECT_ID=your_project_id_here
-VERCEL_TEAM_ID=your_team_id_here  
+- Deployment verificationsssssssssssssssssssssssssssssssssssssssssssssssssssssaaaaaaaaaaeee
 
 # GitHub Integration (Optional)
+
 GITHUB_REPO=username/repository-name
 DEFAULT_BRANCH=main
 
 # Deployment Settings
+
 AUTO_DEPLOY_ON_CONFIG_CHANGE=true
 ROLLBACK_ON_FAILURE=true
-HEALTH_CHECK_TIMEOUT=300000  # 5 minutes in milliseconds
-```
+HEALTH_CHECK_TIMEOUT=300000 # 5 minutes in milliseconds
+
+````
 
 ### Vercel Token Setup
 
@@ -63,7 +55,7 @@ Authorization: Bearer <admin_token>
   },
   "skipHealthCheck": false
 }
-```
+````
 
 ### Get Deployment Status
 
@@ -134,11 +126,13 @@ Authorization: Bearer <admin_token>
 The system performs comprehensive verification tests on each deployment:
 
 ### Critical Tests
+
 - **Health Check**: Verifies `/api/health` endpoint responds correctly
 - **Homepage Load**: Ensures the homepage loads with proper content
 - **API Endpoints**: Tests critical API endpoints are accessible
 
 ### Non-Critical Tests
+
 - **Authentication Flow**: Verifies auth endpoints respond appropriately
 - **Static Assets**: Checks static asset availability
 - **Performance Check**: Measures page load performance
@@ -147,6 +141,7 @@ The system performs comprehensive verification tests on each deployment:
 ### Verification Report
 
 Each verification generates a detailed report including:
+
 - Overall success status
 - Individual test results
 - Performance metrics
@@ -157,6 +152,7 @@ Each verification generates a detailed report including:
 When triggering a deployment, the system automatically sets these environment variables based on white-label configuration:
 
 ### Public Variables
+
 ```bash
 NEXT_PUBLIC_INSTANCE_ID=your-instance-id
 NEXT_PUBLIC_PRIMARY_COLOR=#3B82F6
@@ -168,6 +164,7 @@ NEXT_PUBLIC_FEATURE_DASHBOARD_CARTEIRA_I=true
 ```
 
 ### Private Variables (Encrypted)
+
 ```bash
 FUNIFIER_API_KEY=encrypted_api_key
 FUNIFIER_SERVER_URL=https://your-funifier-server.com
@@ -178,16 +175,19 @@ NODE_ENV=production
 ## Security Considerations
 
 ### Encryption
+
 - Sensitive environment variables are automatically encrypted
 - API keys and tokens are never exposed in logs
 - Encryption keys are managed securely
 
 ### Access Control
+
 - All deployment endpoints require admin authentication
 - Role-based access control prevents unauthorized deployments
 - Audit logging tracks all deployment activities
 
 ### Variable Management
+
 - Sensitive variables are identified automatically
 - Values are encrypted before storage in Vercel
 - Decryption only occurs during deployment
@@ -197,12 +197,17 @@ NODE_ENV=production
 ### Basic Deployment
 
 ```typescript
-import { DeploymentAutomationService } from '@/services/deployment-automation.service';
+import { DeploymentAutomationService } from "@/services/deployment-automation.service";
 
-const deploymentService = new DeploymentAutomationService(config, configService, errorLogger);
+const deploymentService = new DeploymentAutomationService(
+  config,
+  configService,
+  errorLogger
+);
 
 // Trigger deployment
-const result = await deploymentService.triggerAutomatedDeployment('instance-id');
+const result =
+  await deploymentService.triggerAutomatedDeployment("instance-id");
 
 if (result.success) {
   console.log(`Deployment successful: ${result.url}`);
@@ -215,13 +220,16 @@ if (result.success) {
 
 ```typescript
 // Trigger deployment with custom variables
-const result = await deploymentService.triggerAutomatedDeployment('instance-id', {
-  target: 'production',
-  environmentVariables: {
-    'CUSTOM_FEATURE_FLAG': 'true',
-    'API_ENDPOINT': 'https://api.example.com'
+const result = await deploymentService.triggerAutomatedDeployment(
+  "instance-id",
+  {
+    target: "production",
+    environmentVariables: {
+      CUSTOM_FEATURE_FLAG: "true",
+      API_ENDPOINT: "https://api.example.com",
+    },
   }
-});
+);
 ```
 
 ### Rollback Example
@@ -229,8 +237,8 @@ const result = await deploymentService.triggerAutomatedDeployment('instance-id',
 ```typescript
 // Rollback to previous deployment
 const rollbackResult = await deploymentService.rollbackDeployment({
-  deploymentId: 'previous-deployment-id',
-  reason: 'Critical bug found in current deployment'
+  deploymentId: "previous-deployment-id",
+  reason: "Critical bug found in current deployment",
 });
 ```
 
@@ -256,11 +264,13 @@ const rollbackResult = await deploymentService.rollbackDeployment({
 ### Debug Mode
 
 Enable debug logging by setting:
+
 ```bash
 DEBUG_DEPLOYMENT=true
 ```
 
 This will provide detailed logs of:
+
 - API requests to Vercel
 - Environment variable processing
 - Verification test results
@@ -271,6 +281,7 @@ This will provide detailed logs of:
 The system provides monitoring capabilities:
 
 ### Metrics Tracked
+
 - Deployment frequency
 - Success/failure rates
 - Verification test results
@@ -278,12 +289,14 @@ The system provides monitoring capabilities:
 - Error patterns
 
 ### Alerts
+
 - Failed deployments
 - Verification failures
 - Performance degradation
 - Security issues
 
 ### Logging
+
 - All deployment activities
 - API interactions
 - Error conditions
