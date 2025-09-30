@@ -80,21 +80,21 @@ export async function POST(request: NextRequest) {
           tagline: 'Powered by Funifier'
         },
         features: config?.features || {
-          enableRanking: true,
-          enableHistory: true,
-          enableAchievements: true,
-          enableTeams: true,
-          enableNotifications: true,
-          enableAnalytics: true
+          ranking: true,
+          dashboards: {
+            main: true,
+            analytics: true,
+            achievements: true,
+            teams: true
+          },
+          history: true,
+          personalizedRanking: true
         },
         funifierIntegration: {
-          ...config?.funifierIntegration,
           apiKey,
           serverUrl: normalizedServerUrl,
           authToken: authToken || config?.funifierIntegration?.authToken || '',
-          customCollections: config?.funifierIntegration?.customCollections || [],
-          isConfigured: true,
-          lastUpdated: new Date()
+          customCollections: config?.funifierIntegration?.customCollections || []
         },
         createdAt: config?.createdAt || Date.now(),
         updatedAt: Date.now()
@@ -136,10 +136,10 @@ export async function GET(request: NextRequest) {
     const config = await whiteLabelConfigService.getConfiguration(instanceId);
     
     return NextResponse.json({
-      isConfigured: !!config.funifierIntegration?.isConfigured,
-      serverUrl: config.funifierIntegration?.serverUrl || 'https://service2.funifier.com/v3',
-      hasApiKey: !!config.funifierIntegration?.apiKey,
-      lastUpdated: config.funifierIntegration?.lastUpdated
+      isConfigured: !!config?.funifierIntegration?.apiKey,
+      serverUrl: config?.funifierIntegration?.serverUrl || 'https://service2.funifier.com/v3',
+      hasApiKey: !!config?.funifierIntegration?.apiKey,
+      lastUpdated: config?.updatedAt
     });
 
   } catch (error) {

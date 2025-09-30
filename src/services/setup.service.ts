@@ -142,7 +142,7 @@ export class SetupService {
 
       console.log(`Checking setup status for instance: ${instanceId}`);
       const config = await whiteLabelConfigService.getConfiguration(instanceId);
-      const needsSetup = !config || !config.funifierIntegration?.isConfigured;
+      const needsSetup = !config || !config.funifierIntegration?.apiKey;
       console.log(`Setup needed for ${instanceId}: ${needsSetup}`);
       return needsSetup; // No configuration means setup needed
     } catch (error) {
