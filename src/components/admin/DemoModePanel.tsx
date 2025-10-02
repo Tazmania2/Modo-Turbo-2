@@ -8,7 +8,7 @@ interface DemoModePanelProps {
   userId: string;
 }
 
-export const DemoModePanel: React.FC<DemoModePanelProps> = ({ instanceId, userId }) => {
+export const DemoModePanel: React.FC<DemoModePanelProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -70,7 +70,7 @@ export const DemoModePanel: React.FC<DemoModePanelProps> = ({ instanceId, userId
                   Note
                 </h4>
                 <div className="mt-2 text-sm text-yellow-700">
-                  <p>Demo mode uses mock data and doesn't connect to real Funifier APIs. Use this for testing and demonstrations only.</p>
+                  <p>Demo mode uses mock data and doesn&apos;t connect to real Funifier APIs. Use this for testing and demonstrations only.</p>
                 </div>
               </div>
             </div>
