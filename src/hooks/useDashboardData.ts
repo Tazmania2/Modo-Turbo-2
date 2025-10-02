@@ -58,14 +58,38 @@ export const useDashboardData = (playerId?: string) => {
     setError(null);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Check if we're in demo mode from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDemoMode = urlParams.get('mode') === 'demo';
       
-      // In a real implementation, this would fetch from the API
-      // const response = await fetch(`/api/dashboard/player/${playerId}`);
-      // const dashboardData = await response.json();
+      if (isDemoMode) {
+        // Use mock data for demo mode
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setData(mockDashboardData);
+        return;
+      }
       
-      setData(mockDashboardData);
+      // For real mode, we need authentication and a player ID
+      if (!playerId) {
+        // Redirect to login if no player ID
+        window.location.href = '/admin/login';
+        return;
+      }
+      
+      // Make real API call to Funifier
+      const response = await fetch(`/api/dashboard/player/${playerId}`);
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Redirect to login on authentication error
+          window.location.href = '/admin/login';
+          return;
+        }
+        throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
+      }
+      
+      const dashboardData = await response.json();
+      setData(dashboardData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');
     } finally {

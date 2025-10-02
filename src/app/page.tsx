@@ -16,27 +16,14 @@ function HomeContent() {
 
   const checkSetupAndRedirect = async () => {
     try {
-      const params = new URLSearchParams();
-      if (instanceId) {
-        params.set('instanceId', instanceId);
-      }
-
-      const response = await fetch(`/api/setup?${params}`);
-      const data = await response.json();
-
-      if (data.needsSetup) {
-        // Redirect to setup page
-        const setupUrl = instanceId ? `/setup?instance=${instanceId}` : '/setup';
-        router.push(setupUrl);
-      } else {
-        // Redirect to dashboard
-        const dashboardUrl = instanceId ? `/dashboard?instance=${instanceId}` : '/dashboard';
-        router.push(dashboardUrl);
-      }
+      // With the new simplified approach, always redirect to admin login
+      // The system will handle authentication and redirect appropriately
+      const loginUrl = instanceId ? `/admin/login?instance=${instanceId}` : '/admin/login';
+      router.push(loginUrl);
     } catch (error) {
-      console.error('Failed to check setup status:', error);
-      // On error, redirect to setup
-      router.push('/setup');
+      console.error('Failed to redirect:', error);
+      // On error, redirect to admin login
+      router.push('/admin/login');
     } finally {
       setIsLoading(false);
     }

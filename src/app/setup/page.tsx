@@ -19,26 +19,15 @@ function SetupContent() {
 
   const checkSetupStatus = async () => {
     try {
-      const params = new URLSearchParams();
-      if (instanceId) {
-        params.set('instanceId', instanceId);
-      }
-
-      const response = await fetch(`/api/setup?${params}`);
-      const data = await response.json();
-
-      setNeedsSetup(data.needsSetup);
-      
-      // If setup is not needed, redirect to appropriate page
-      if (!data.needsSetup && instanceId) {
-        // Check if it's a demo or Funifier instance and redirect accordingly
-        router.push(`/dashboard?instance=${instanceId}`);
-        return;
-      }
+      // With the new simplified approach, setup is no longer needed
+      // Redirect to admin login instead
+      const loginUrl = instanceId ? `/admin/login?instance=${instanceId}` : '/admin/login';
+      router.push(loginUrl);
+      return;
     } catch (error) {
-      console.error('Failed to check setup status:', error);
-      // Assume setup is needed on error
-      setNeedsSetup(true);
+      console.error('Failed to redirect:', error);
+      // On error, redirect to admin login
+      router.push('/admin/login');
     } finally {
       setIsLoading(false);
     }
