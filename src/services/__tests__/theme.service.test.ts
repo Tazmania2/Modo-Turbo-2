@@ -6,11 +6,7 @@ import { WhiteLabelBranding } from '@/types/funifier';
 // Mock dependencies
 vi.mock('../branding.service');
 
-const mockBrandingService = brandingService as {
-  getBranding: Mock;
-  generateCSSProperties: Mock;
-  generateTailwindConfig: Mock;
-};
+const mockBrandingService = vi.mocked(brandingService);
 
 // Mock DOM APIs
 const mockDocument = {

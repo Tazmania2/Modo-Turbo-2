@@ -19,7 +19,7 @@ describe('VercelDeploymentService', () => {
     service = new VercelDeploymentService(mockConfig);
     
     // Reset fetch mock
-    (fetch as jest.Mock).mockReset();
+    vi.mocked(fetch).mockReset();
   });
 
   describe('getProject', () => {
@@ -30,7 +30,7 @@ describe('VercelDeploymentService', () => {
         framework: 'nextjs'
       };
 
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockProject)
       });
@@ -51,7 +51,7 @@ describe('VercelDeploymentService', () => {
     });
 
     it('should handle API errors', async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
         status: 404,
         statusText: 'Not Found',
@@ -78,7 +78,7 @@ describe('VercelDeploymentService', () => {
         ]
       };
 
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockEnvVars)
       });
@@ -94,7 +94,7 @@ describe('VercelDeploymentService', () => {
     });
 
     it('should return empty array if no envs property', async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({})
       });
@@ -107,7 +107,7 @@ describe('VercelDeploymentService', () => {
   describe('updateEnvironmentVariables', () => {
     it('should create new environment variables', async () => {
       // Mock getting existing variables (empty)
-      (fetch as jest.Mock)
+      vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ envs: [] })
@@ -151,7 +151,7 @@ describe('VercelDeploymentService', () => {
       };
 
       // Mock getting existing variables
-      (fetch as jest.Mock)
+      vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ envs: [existingVar] })
@@ -190,7 +190,7 @@ describe('VercelDeploymentService', () => {
         readyState: 'BUILDING'
       };
 
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockDeployment)
       });
@@ -217,7 +217,7 @@ describe('VercelDeploymentService', () => {
         readyState: 'BUILDING'
       };
 
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockDeployment)
       });
@@ -249,7 +249,7 @@ describe('VercelDeploymentService', () => {
       };
 
       // Mock deployment status check
-      (fetch as jest.Mock)
+      vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockDeployment)
@@ -274,7 +274,7 @@ describe('VercelDeploymentService', () => {
         readyState: 'ERROR'
       };
 
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockDeployment)
       });
@@ -293,7 +293,7 @@ describe('VercelDeploymentService', () => {
         readyState: 'BUILDING'
       };
 
-      (fetch as jest.Mock).mockResolvedValue({
+      vi.mocked(fetch).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockDeployment)
       });
@@ -314,7 +314,7 @@ describe('VercelDeploymentService', () => {
       };
 
       // Mock get deployment
-      (fetch as jest.Mock)
+      vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockDeployment)
@@ -338,7 +338,7 @@ describe('VercelDeploymentService', () => {
     });
 
     it('should throw error if deployment not found', async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: false,
         status: 404,
         statusText: 'Not Found',
@@ -358,7 +358,7 @@ describe('VercelDeploymentService', () => {
         { text: 'Deployment ready' }
       ];
 
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockLogs)
       });
@@ -378,7 +378,7 @@ describe('VercelDeploymentService', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      (fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
+      vi.mocked(fetch).mockRejectedValueOnce(new Error('Network error'));
 
       const result = await service.getDeploymentLogs('deployment-id');
 

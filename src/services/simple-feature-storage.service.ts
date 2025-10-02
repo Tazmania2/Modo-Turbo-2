@@ -94,7 +94,9 @@ export class SimpleFeatureStorageService {
           customCollections: []
         },
         updatedAt: Date.now(),
-        updatedBy: userId
+        updatedBy: userId,
+        createdAt: Date.now(),
+        createdBy: userId
       };
 
       if (existingResponse && existingResponse.length > 0) {
