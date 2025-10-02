@@ -1,5 +1,6 @@
 import { WhiteLabelBranding } from '@/types/funifier';
 import { whiteLabelConfigService } from './white-label-config.service';
+import { brandingDatabaseService } from './branding-database.service';
 import { validateBrandingConfiguration } from '@/utils/validation';
 
 export interface BrandingUpdateResult {
