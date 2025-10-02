@@ -47,9 +47,16 @@ export function LoginForm({
         throw new Error(error.error || 'Login failed');
       }
 
-      // Success - redirect to dashboard
-      const redirectTo = instanceId ? `/dashboard?instance=${instanceId}` : '/dashboard';
-      window.location.href = redirectTo;
+      // Success - check if user is admin and redirect appropriately
+      if (requireAdmin) {
+        // For admin login, redirect to admin panel
+        const redirectTo = instanceId ? `/admin?instance=${instanceId}` : '/admin';
+        window.location.href = redirectTo;
+      } else {
+        // For regular login, redirect to dashboard
+        const redirectTo = instanceId ? `/dashboard?instance=${instanceId}` : '/dashboard';
+        window.location.href = redirectTo;
+      }
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

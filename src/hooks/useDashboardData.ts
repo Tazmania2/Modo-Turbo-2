@@ -79,7 +79,7 @@ export const useDashboardData = (playerId?: string) => {
         });
         
         if (!authResponse.ok) {
-          // Redirect to login if not authenticated
+          // Redirect to admin login if not authenticated
           window.location.href = '/admin/login';
           return;
         }
@@ -99,7 +99,7 @@ export const useDashboardData = (playerId?: string) => {
       
       if (!response.ok) {
         if (response.status === 401) {
-          // Redirect to login on authentication error
+          // Redirect to admin login on authentication error
           window.location.href = '/admin/login';
           return;
         }
