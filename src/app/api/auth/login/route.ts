@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
           isAuthTypeError,
           debugInfo: {
             url: funifierUrl,
-            hasApiKey: !!apiKey,
+            hasApiKey: !!process.env.FUNIFIER_API_KEY,
             bodyLength: urlEncodedBody.length
           }
         },
