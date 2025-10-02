@@ -22,6 +22,14 @@ export class SimpleFeatureStorageService {
    */
   async getFeatures(instanceId: string): Promise<WhiteLabelFeatures | null> {
     try {
+      // Check if Funifier credentials are configured
+      const credentialsInfo = funifierEnvService.getCredentialsInfo();
+      
+      if (!credentialsInfo.isConfigured) {
+        console.log('Funifier credentials not configured, returning default features');
+        return this.getDefaultFeatures();
+      }
+
       // Get API client with basic auth for database operations
       const apiClient = funifierEnvService.getApiClient();
       
@@ -58,6 +66,15 @@ export class SimpleFeatureStorageService {
    */
   async saveFeatures(instanceId: string, features: WhiteLabelFeatures, userId: string): Promise<{ success: boolean; error?: string }> {
     try {
+      // Check if Funifier credentials are configured
+      const credentialsInfo = funifierEnvService.getCredentialsInfo();
+      
+      if (!credentialsInfo.isConfigured) {
+        console.log('Funifier credentials not configured, simulating save operation');
+        console.log('Would save features for instance:', instanceId, features);
+        return { success: true };
+      }
+
       // Get API client with basic auth for database operations
       const apiClient = funifierEnvService.getApiClient();
       

@@ -106,8 +106,21 @@ export class FeatureToggleService {
    */
   async getFeatureConfiguration(instanceId: string): Promise<WhiteLabelFeatures | null> {
     try {
-      const config = await whiteLabelConfigService.getConfiguration(instanceId);
-      return config?.features || null;
+      // Make HTTP request to the API route
+      const response = await fetch(`/api/admin/features?instanceId=${instanceId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Failed to get feature configuration:', response.statusText);
+        return null;
+      }
+
+      const result = await response.json();
+      return result.features || null;
     } catch (error) {
       console.error('Failed to get feature configuration:', error);
       return null;
@@ -187,58 +200,34 @@ export class FeatureToggleService {
     userId: string
   ): Promise<FeatureToggleResult> {
     try {
-      const config = await whiteLabelConfigService.getConfiguration(instanceId);
-      if (!config) {
+      // Make HTTP request to the API route
+      const response = await fetch(`/api/admin/features?instanceId=${instanceId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ updates }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
         return {
           success: false,
-          errors: ['Configuration not found']
+          errors: [errorData.error || 'Failed to update features']
         };
       }
 
-      let updatedFeatures = { ...config.features };
-
-      // Apply all updates
-      for (const update of updates) {
-        updatedFeatures = this.updateFeatureInConfig(
-          updatedFeatures,
-          update.featureName,
-          update.enabled
-        );
-      }
-
-      // Validate the updated configuration
-      const validation = validateFeatureToggleConfiguration(updatedFeatures);
-      if (!validation.isValid) {
-        return {
-          success: false,
-          errors: validation.errors,
-          warnings: validation.warnings
-        };
-      }
-
-      // Update the full configuration
-      const updatedConfig: WhiteLabelConfiguration = {
-        ...config,
-        features: updatedFeatures,
-        updatedAt: Date.now()
-      };
-
-      const saveResult = await whiteLabelConfigService.saveConfiguration(
-        instanceId,
-        updatedConfig,
-        userId
-      );
-
-      if (saveResult.success) {
+      const result = await response.json();
+      
+      if (result.success) {
         return {
           success: true,
-          updatedFeatures,
-          warnings: validation.warnings
+          updatedFeatures: result.features
         };
       } else {
         return {
           success: false,
-          errors: saveResult.errors
+          errors: [result.error || 'Failed to update features']
         };
       }
     } catch (error) {
@@ -256,37 +245,19 @@ export class FeatureToggleService {
     try {
       const defaultFeatures = this.getDefaultFeatures();
       
-      const config = await whiteLabelConfigService.getConfiguration(instanceId);
-      if (!config) {
-        return {
-          success: false,
-          errors: ['Configuration not found']
-        };
+      // Convert default features to updates format
+      const updates: FeatureToggleUpdate[] = [];
+      const availableFeatures = this.getAvailableFeatures();
+      
+      for (const feature of availableFeatures) {
+        updates.push({
+          featureName: feature.key,
+          enabled: feature.defaultEnabled
+        });
       }
 
-      const updatedConfig: WhiteLabelConfiguration = {
-        ...config,
-        features: defaultFeatures,
-        updatedAt: Date.now()
-      };
-
-      const saveResult = await whiteLabelConfigService.saveConfiguration(
-        instanceId,
-        updatedConfig,
-        userId
-      );
-
-      if (saveResult.success) {
-        return {
-          success: true,
-          updatedFeatures: defaultFeatures
-        };
-      } else {
-        return {
-          success: false,
-          errors: saveResult.errors
-        };
-      }
+      // Use the updateMultipleFeatures method which calls the API
+      return await this.updateMultipleFeatures(instanceId, updates, userId);
     } catch (error) {
       return {
         success: false,
