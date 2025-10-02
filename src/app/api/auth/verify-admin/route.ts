@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     
     try {
       // Step 1: Get current user info using Bearer token
-      const currentUser = await apiClient.get('/player/me/status');
+      const currentUser = await apiClient.get<any>('/player/me/status');
       
       if (!currentUser || !currentUser._id) {
         return NextResponse.json(
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         }
       ];
       
-      const principalResponse = await basicApiClient.post(`/database/principal/aggregate?strict=true`, aggregateQuery);
+      const principalResponse = await basicApiClient.post<any[]>(`/database/principal/aggregate?strict=true`, aggregateQuery);
       
       // The response is an array, get the first (and only) result
       const principalData = principalResponse && principalResponse.length > 0 ? principalResponse[0] : null;
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       
       // For other errors, try to return the user data without admin status
       try {
-        const currentUser = await apiClient.get('/player/me/status');
+        const currentUser = await apiClient.get<any>('/player/me/status');
         return NextResponse.json({
           isAdmin: false,
           roles: [],
