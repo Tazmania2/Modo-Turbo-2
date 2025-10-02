@@ -69,11 +69,29 @@ export const useDashboardData = (playerId?: string) => {
         return;
       }
       
-      // For real mode, we need authentication and a player ID
+      // For real mode, we need authentication
+      // Try to get player ID from auth context if not provided
       if (!playerId) {
-        // Redirect to login if no player ID
-        window.location.href = '/admin/login';
-        return;
+        // Check if user is authenticated first
+        const authResponse = await fetch('/api/auth/verify-admin', {
+          method: 'GET',
+          credentials: 'include',
+        });
+        
+        if (!authResponse.ok) {
+          // Redirect to login if not authenticated
+          window.location.href = '/admin/login';
+          return;
+        }
+        
+        const authData = await authResponse.json();
+        if (authData.playerData && authData.playerData._id) {
+          // Use the authenticated user's ID as playerId
+          playerId = authData.playerData._id;
+        } else {
+          window.location.href = '/admin/login';
+          return;
+        }
       }
       
       // Make real API call to Funifier

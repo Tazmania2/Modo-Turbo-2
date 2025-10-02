@@ -25,10 +25,13 @@ function AdminPageContent() {
       router.push('/dashboard');
     }
 
-    // Get instance ID from URL params
+    // Get instance ID from URL params or generate a default one
     const instance = searchParams.get('instance');
     if (instance) {
       setInstanceId(instance);
+    } else {
+      // Generate a default instance ID if none provided
+      setInstanceId(`admin_${Date.now()}`);
     }
   }, [isAuthenticated, isAdmin, isLoading, router, searchParams]);
 
@@ -132,7 +135,7 @@ function AdminPageContent() {
           )}
 
           {/* Feature Toggles Tab */}
-          {activeTab === 'features' && instanceId && (
+          {activeTab === 'features' && (
             <FeatureTogglePanel
               instanceId={instanceId}
               userId={user?._id || 'unknown'}
@@ -141,7 +144,7 @@ function AdminPageContent() {
           )}
 
           {/* Branding Tab */}
-          {activeTab === 'branding' && instanceId && (
+          {activeTab === 'branding' && (
             <BrandingPanel
               instanceId={instanceId}
               userId={user?._id || 'unknown'}
@@ -149,7 +152,7 @@ function AdminPageContent() {
           )}
 
           {/* Settings Tab */}
-          {activeTab === 'settings' && instanceId && (
+          {activeTab === 'settings' && (
             <FunifierStatusPanel
               instanceId={instanceId}
               userId={user?._id || 'unknown'}
@@ -157,11 +160,8 @@ function AdminPageContent() {
           )}
 
           {/* Demo Mode Tab */}
-          {activeTab === 'demo' && instanceId && (
-            <DemoModePanel
-              instanceId={instanceId}
-              userId={user?._id || 'unknown'}
-            />
+          {activeTab === 'demo' && (
+            <DemoModePanel />
           )}
 
           {/* Security Tab */}
