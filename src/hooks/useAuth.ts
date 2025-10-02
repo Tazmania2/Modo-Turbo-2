@@ -39,35 +39,21 @@ export function useAuth(): UseAuthReturn {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
       
-      const response = await fetch('/api/auth/me', {
+      // Try to verify admin role (this will also validate authentication)
+      const adminResponse = await fetch('/api/auth/verify-admin', {
         method: 'GET',
         credentials: 'include',
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (adminResponse.ok) {
+        const adminData = await adminResponse.json();
         
-        // Verify admin role
-        const adminResponse = await fetch('/api/auth/verify-admin', {
-          method: 'GET',
-          credentials: 'include',
-        });
-
-        let isAdmin = false;
-        let roles: string[] = [];
-
-        if (adminResponse.ok) {
-          const adminData = await adminResponse.json();
-          isAdmin = adminData.isAdmin;
-          roles = adminData.roles;
-        }
-
         setState({
-          user: data.user,
+          user: adminData.playerData,
           isAuthenticated: true,
           isLoading: false,
-          isAdmin,
-          roles,
+          isAdmin: adminData.isAdmin,
+          roles: adminData.roles,
         });
       } else {
         // Check if we're in demo mode

@@ -101,20 +101,41 @@ export class FunifierAuthService {
     }
 
     try {
+      // First get current user info to get the user ID
+      const currentUser = await this.getCurrentUser();
+      
+      // Then fetch principal data using the user ID
       const principalData = await funifierApiClient.get<{
+        _id: string;
+        valueId: string;
         roles: string[];
-        player: FunifierPlayerStatus;
-      }>('/database/principal');
+        name: string;
+        team: boolean;
+        type: number;
+        userId: string;
+        player: boolean;
+      }>(`/database/principal/${currentUser._id}`);
 
-      const isAdmin = principalData.roles.includes('admin');
+      const isAdmin = principalData.roles?.includes('admin') || false;
 
       return {
         isAdmin,
-        roles: principalData.roles,
-        playerData: principalData.player,
+        roles: principalData.roles || [],
+        playerData: currentUser,
       };
     } catch (error) {
-      throw error;
+      console.error('Admin verification error:', error);
+      // If we can't verify admin status, return false but still return user data
+      try {
+        const currentUser = await this.getCurrentUser();
+        return {
+          isAdmin: false,
+          roles: [],
+          playerData: currentUser,
+        };
+      } catch (userError) {
+        throw error;
+      }
     }
   }
 
