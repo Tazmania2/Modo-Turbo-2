@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`Authenticating user ${username} with Funifier at ${funifierUrl}...`);
-    console.log('API Key available:', apiKey ? 'YES' : 'NO');
+    console.log('API Key available:', process.env.FUNIFIER_API_KEY ? 'YES' : 'NO');
     console.log('Server URL:', serverUrl);
     
     // Create URL-encoded body as per Funifier documentation
