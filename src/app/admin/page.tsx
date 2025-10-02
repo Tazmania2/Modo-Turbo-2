@@ -161,7 +161,10 @@ function AdminPageContent() {
 
           {/* Demo Mode Tab */}
           {activeTab === 'demo' && (
-            <DemoModePanel />
+            <DemoModePanel
+              instanceId={instanceId}
+              userId={user?._id || 'unknown'}
+            />
           )}
 
           {/* Security Tab */}
