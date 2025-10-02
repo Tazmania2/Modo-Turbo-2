@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { demoDataService } from '@/services/demo-data.service';
+import { funifierEnvService } from '@/services/funifier-env.service';
 
 /**
  * Headless authentication - redirect to Funifier
@@ -77,34 +78,14 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Get the API key from configuration (we need this for Funifier auth)
-    // For now, we'll try to get it from cache or use a default approach
-    let apiKey = '';
-    let serverUrl = 'https://service2.funifier.com/v3';
+    // Get credentials from environment variables
+    const credentialsInfo = funifierEnvService.getCredentialsInfo();
     
-    try {
-      // Try to get from cache first (no database calls to avoid auth issues)
-      const { whiteLabelConfigCache } = await import('@/utils/cache');
-      const cachedConfig = whiteLabelConfigCache.getConfiguration(instanceId);
-      
-      if (cachedConfig?.funifierIntegration?.apiKey) {
-        apiKey = cachedConfig.funifierIntegration.apiKey;
-        let configServerUrl = cachedConfig.funifierIntegration.serverUrl || 'https://service2.funifier.com/v3';
-        // Ensure the URL always ends with /v3
-        if (!configServerUrl.endsWith('/v3')) {
-          configServerUrl = configServerUrl.replace(/\/+$/, '') + '/v3';
-        }
-        serverUrl = configServerUrl;
-      }
-    } catch (cacheError) {
-      console.warn('Could not get API key from cache:', cacheError);
-    }
-    
-    if (!apiKey) {
-      console.error('No API key found for instance:', instanceId);
+    if (!credentialsInfo.isConfigured) {
+      console.error('Funifier credentials not configured in environment variables');
       return NextResponse.json(
         { 
-          error: 'Funifier API key not configured. Please complete setup first.',
+          error: 'Funifier credentials not configured. Please set environment variables in your Vercel deployment.',
           instanceId: instanceId,
           needsSetup: true
         },
@@ -112,14 +93,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate API key format (basic check)
-    if (apiKey.length < 10) {
-      console.error('API key appears to be invalid (too short):', apiKey.length);
-      return NextResponse.json(
-        { error: 'Invalid API key format. Please check your Funifier configuration.' },
-        { status: 400 }
-      );
-    }
+    // Get API client from environment service
+    const apiClient = funifierEnvService.getApiClient();
+    const serverUrl = funifierEnvService.getApiUrl();
     
     // Use the correct Funifier authentication endpoint
     const funifierUrl = `${serverUrl}/auth/token`;
@@ -140,14 +116,14 @@ export async function POST(request: NextRequest) {
     // Create URL-encoded body as per Funifier documentation
     // CRITICAL: Do not send any Authorization headers to /v3/auth/token
     const urlEncodedBody = new URLSearchParams({
-      apiKey: apiKey,
+      apiKey: process.env.FUNIFIER_API_KEY || '',
       grant_type: 'password',
       username: username,
       password: password,
     }).toString();
     
     console.log('Request body (credentials masked):', {
-      apiKey: apiKey ? `${apiKey.substring(0, 8)}...` : 'NOT_FOUND',
+      apiKey: process.env.FUNIFIER_API_KEY ? `${process.env.FUNIFIER_API_KEY.substring(0, 8)}...` : 'NOT_FOUND',
       grant_type: 'password',
       username: username,
       password: '***HIDDEN***'

@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { FeatureTogglePanel } from '@/components/admin/FeatureTogglePanel';
 import { BrandingPanel } from '@/components/admin/BrandingPanel';
-import { FunifierCredentialsPanel } from '@/components/admin/FunifierCredentialsPanel';
+import { FunifierStatusPanel } from '@/components/admin/FunifierStatusPanel';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import SecurityPanel from '@/components/admin/SecurityPanel';
+import { DemoModePanel } from '@/components/admin/DemoModePanel';
 import { WhiteLabelFeatures } from '@/types/funifier';
 
 function AdminPageContent() {
@@ -46,6 +47,7 @@ function AdminPageContent() {
     { id: 'features', name: 'Feature Toggles', icon: '🎛️' },
     { id: 'branding', name: 'Branding', icon: '🎨' },
     { id: 'settings', name: 'Funifier Settings', icon: '⚙️' },
+    { id: 'demo', name: 'Demo Mode', icon: '🎮' },
     { id: 'security', name: 'Security', icon: '🔒' }
   ];
 
@@ -148,7 +150,15 @@ function AdminPageContent() {
 
           {/* Settings Tab */}
           {activeTab === 'settings' && instanceId && (
-            <FunifierCredentialsPanel
+            <FunifierStatusPanel
+              instanceId={instanceId}
+              userId={user?._id || 'unknown'}
+            />
+          )}
+
+          {/* Demo Mode Tab */}
+          {activeTab === 'demo' && instanceId && (
+            <DemoModePanel
               instanceId={instanceId}
               userId={user?._id || 'unknown'}
             />
