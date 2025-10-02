@@ -15,7 +15,7 @@ export class FunifierEnvService {
     this.credentials = {
       apiKey: process.env.FUNIFIER_API_KEY || '',
       authToken: process.env.FUNIFIER_BASIC_TOKEN || '',
-      serverUrl: process.env.DEFAULT_FUNIFIER_URL || 'https://service2.funifier.com'
+      serverUrl: process.env.DEFAULT_FUNIFIER_URL || 'https://service2.funifier.com/v3'
     };
 
     // Initialize API client with environment credentials
@@ -85,6 +85,8 @@ export class FunifierEnvService {
    * Get the correct API URL for requests
    */
   public getApiUrl(): string {
+    // If the URL already includes /v3, use it as-is
+    // Otherwise, append /v3
     return this.credentials.serverUrl.endsWith('/v3') 
       ? this.credentials.serverUrl 
       : `${this.credentials.serverUrl.replace(/\/$/, '')}/v3`;
