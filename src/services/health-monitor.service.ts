@@ -2,6 +2,9 @@ import { HealthCheckResult, SystemHealth } from '@/types/error';
 import { errorLogger } from './error-logger.service';
 import { ErrorType } from '@/types/error';
 
+// Re-export for test files
+export type { HealthCheckResult };
+
 export interface HealthCheckConfig {
   timeout: number;
   interval: number;

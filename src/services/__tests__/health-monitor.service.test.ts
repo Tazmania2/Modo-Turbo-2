@@ -1,32 +1,6 @@
-import { vi } from 'vitest';
+import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 import { healthMonitor } from '../health-monitor.service';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { afterEach } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
+import type { HealthCheckResult } from '../health-monitor.service';
 
 describe('HealthMonitorService', () => {
   beforeEach(() => {

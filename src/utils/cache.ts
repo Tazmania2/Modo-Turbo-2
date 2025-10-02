@@ -288,3 +288,6 @@ export class CachePersistence {
     }
   }
 }
+
+// Export alias for backward compatibility
+export const CacheService = ConfigurationCache;

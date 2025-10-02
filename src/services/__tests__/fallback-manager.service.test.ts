@@ -1,25 +1,6 @@
-import { vi } from 'vitest';
+import { describe, it, beforeEach, expect, vi } from 'vitest';
 import { fallbackManager } from '../fallback-manager.service';
 import { demoDataService } from '../demo-data.service';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { it } from 'zod/locales';
-import { describe } from 'node:test';
-import { beforeEach } from 'node:test';
-import { describe } from 'node:test';
 
 // Mock the demo data service
 vi.mock('../demo-data.service', () => ({
