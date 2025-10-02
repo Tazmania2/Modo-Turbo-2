@@ -14,7 +14,6 @@ export class FunifierEnvService {
     // Get credentials from environment variables
     this.credentials = {
       apiKey: process.env.FUNIFIER_API_KEY || '',
-      appSecret: process.env.FUNIFIER_APP_SECRET || '',
       authToken: process.env.FUNIFIER_BASIC_TOKEN || '',
       serverUrl: process.env.DEFAULT_FUNIFIER_URL || 'https://service2.funifier.com'
     };
@@ -44,10 +43,9 @@ export class FunifierEnvService {
   public getCredentialsInfo() {
     return {
       hasApiKey: !!this.credentials.apiKey,
-      hasAppSecret: !!this.credentials.appSecret,
       hasAuthToken: !!this.credentials.authToken,
       serverUrl: this.credentials.serverUrl,
-      isConfigured: !!(this.credentials.apiKey && this.credentials.appSecret && this.credentials.authToken)
+      isConfigured: !!(this.credentials.apiKey && this.credentials.authToken)
     };
   }
 
@@ -56,7 +54,7 @@ export class FunifierEnvService {
    */
   public async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      if (!this.credentials.apiKey || !this.credentials.appSecret || !this.credentials.authToken) {
+      if (!this.credentials.apiKey || !this.credentials.authToken) {
         return {
           success: false,
           message: 'Missing Funifier credentials in environment variables'

@@ -17,7 +17,6 @@ import {
 
 interface FunifierStatus {
   hasApiKey: boolean;
-  hasAppSecret: boolean;
   hasAuthToken: boolean;
   serverUrl: string;
   isConfigured: boolean;
@@ -228,11 +227,11 @@ export const FunifierStatusPanel: React.FC<FunifierStatusPanelProps> = ({ instan
 
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center space-x-3">
-                <Shield className="h-4 w-4 text-purple-500" />
-                <span className="text-sm">App Secret</span>
+                <Key className="h-4 w-4 text-orange-500" />
+                <span className="text-sm">Basic Token</span>
               </div>
-              <Badge className={status?.hasAppSecret ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                {status?.hasAppSecret ? 'Configured' : 'Missing'}
+              <Badge className={status?.hasAuthToken ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                {status?.hasAuthToken ? 'Configured' : 'Missing'}
               </Badge>
             </div>
 
@@ -300,7 +299,6 @@ export const FunifierStatusPanel: React.FC<FunifierStatusPanelProps> = ({ instan
                 <p>To configure Funifier integration, set these environment variables in your Vercel deployment:</p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
                   <li><code className="bg-blue-100 px-1 rounded">FUNIFIER_API_KEY</code> - Your Funifier API key</li>
-                  <li><code className="bg-blue-100 px-1 rounded">FUNIFIER_APP_SECRET</code> - Your Funifier app secret</li>
                   <li><code className="bg-blue-100 px-1 rounded">FUNIFIER_BASIC_TOKEN</code> - Your Funifier basic auth token</li>
                   <li><code className="bg-blue-100 px-1 rounded">DEFAULT_FUNIFIER_URL</code> - Funifier server URL (default: https://service2.funifier.com)</li>
                 </ul>
