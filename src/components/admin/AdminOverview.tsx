@@ -4,12 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { 
-  Trophy, 
-  Settings, 
-  Palette, 
-  ToggleLeft, 
-  Server, 
+import {
+  Trophy,
+  Settings,
+  Palette,
+  ToggleLeft,
+  Server,
   Shield,
   CheckCircle,
   XCircle,
@@ -56,11 +56,11 @@ export function AdminOverview({ user, instanceId, onNavigateToTab }: AdminOvervi
       if (configResponse.ok) {
         const config = await configResponse.json();
         setConfiguration(config);
-        
+
         // Check branding configuration
         const brandingConfigured = !!(
-          config.branding?.companyName || 
-          config.branding?.logo || 
+          config.branding?.companyName ||
+          config.branding?.logo ||
           (config.branding?.primaryColor && config.branding.primaryColor !== '#3B82F6')
         );
 
@@ -377,7 +377,7 @@ export function AdminOverview({ user, instanceId, onNavigateToTab }: AdminOvervi
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Last Updated:</span>
                 <span className="text-sm text-gray-500">
-                  {configuration?.updatedAt 
+                  {configuration?.updatedAt
                     ? new Date(configuration.updatedAt).toLocaleDateString()
                     : 'Never'
                   }
