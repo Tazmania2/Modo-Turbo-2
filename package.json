@@ -24,7 +24,11 @@
     "test:load:heavy": "npx tsx src/test/performance/load-test.ts heavy",
     "test:full-integration": "npx tsx scripts/run-integration-tests.ts",
     "test:complete": "npm run test:full-integration",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "analysis:setup": "npx tsx src/scripts/analysis-setup.ts setup",
+    "analysis:test": "npx tsx src/scripts/analysis-setup.ts test",
+    "analysis:run": "npx tsx src/scripts/analysis-setup.ts analyze",
+    "analysis:config": "npx tsx src/scripts/analysis-setup.ts config"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.8",
