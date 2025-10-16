@@ -309,6 +309,107 @@ export interface TestingPlan {
   performance: string[];
 }
 
+export interface RepositoryAnalysisResult {
+  repository: RepositoryMetadata;
+  files: FileAnalysis[];
+  dependencies: DependencyAnalysisResult;
+  metrics: QualityMetrics;
+  issues: AnalysisIssue[];
+  improvements: ImprovementOpportunity[];
+}
+
+export interface DependencyAnalysisResult {
+  total: number;
+  direct: number;
+  indirect: number;
+  outdated: number;
+  vulnerable: number;
+  tree: DependencyTreeInfo[];
+  vulnerabilities: SecurityVulnerability[];
+  audit: DependencyAuditResult[];
+}
+
+export interface DependencyTreeInfo {
+  name: string;
+  version: string;
+  depth: number;
+  isDirect: boolean;
+  children: DependencyTreeInfo[];
+}
+
+export interface ComparisonResult {
+  baseRepository: string;
+  targetRepository: string;
+  summary: ComparisonSummary;
+  fileChanges: FileChangeAnalysis[];
+  dependencyChanges: DependencyChangeAnalysis;
+  structuralChanges: StructuralChangeAnalysis[];
+  qualityDelta: QualityMetricsDelta;
+}
+
+export interface ComparisonSummary {
+  filesAdded: number;
+  filesModified: number;
+  filesRemoved: number;
+  linesAdded: number;
+  linesRemoved: number;
+  dependenciesAdded: number;
+  dependenciesRemoved: number;
+  dependenciesUpdated: number;
+  overallRiskLevel: RiskLevel;
+}
+
+export interface FileChangeAnalysis {
+  path: string;
+  changeType: 'added' | 'modified' | 'removed';
+  linesAdded: number;
+  linesRemoved: number;
+  complexityChange: number;
+  riskLevel: RiskLevel;
+  impact: ChangeImpact;
+}
+
+export interface DependencyChangeAnalysis {
+  added: DependencyChange[];
+  removed: DependencyChange[];
+  updated: DependencyChange[];
+  securityImpact: SecurityImpactAnalysis;
+}
+
+export interface DependencyChange {
+  name: string;
+  oldVersion?: string;
+  newVersion?: string;
+  changeType: 'added' | 'removed' | 'updated';
+  isBreaking: boolean;
+  riskLevel: RiskLevel;
+  vulnerabilities: SecurityVulnerability[];
+}
+
+export interface SecurityImpactAnalysis {
+  newVulnerabilities: number;
+  resolvedVulnerabilities: number;
+  riskChange: 'increased' | 'decreased' | 'unchanged';
+  criticalIssues: SecurityVulnerability[];
+}
+
+export interface StructuralChangeAnalysis {
+  type: 'component' | 'service' | 'utility' | 'config' | 'api';
+  name: string;
+  changeType: 'added' | 'modified' | 'removed';
+  impact: ChangeImpact;
+  affectedFiles: string[];
+  dependencies: string[];
+}
+
+export interface QualityMetricsDelta {
+  maintainabilityChange: number;
+  complexityChange: number;
+  testCoverageChange: number;
+  technicalDebtChange: number;
+  overallQualityChange: number;
+}
+
 export interface AnalysisReport {
   metadata: AnalysisMetadata;
   summary: AnalysisSummary;

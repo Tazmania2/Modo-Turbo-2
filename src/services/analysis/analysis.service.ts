@@ -1,6 +1,8 @@
 import { RepositoryAnalyzerService, ChangeAnalysis, ProjectStructure } from './repository-analyzer.service';
 import { GitDiffAnalyzerService, GitDiffResult } from './git-diff-analyzer.service';
 import { AnalysisConfigService, AnalysisConfiguration } from './analysis-config.service';
+import { DependencyAnalyzerService, DependencyComparison, VulnerabilityReport } from './dependency-analyzer.service';
+import { DependencyAuditResult, AnalysisIssue } from '../../types/analysis.types';
 
 export interface AnalysisResult {
   id: string;
@@ -22,17 +24,27 @@ export interface RepositoryAnalysisResult {
   branch: string;
   commitHash: string;
   structure: ProjectStructure;
+  dependencies: DependencyAnalysisInfo;
   analysisDate: Date;
   isAccessible: boolean;
   error?: string;
 }
 
+export interface DependencyAnalysisInfo {
+  packageInfo: any;
+  vulnerabilities: VulnerabilityReport[];
+  auditResults: DependencyAuditResult[];
+  dependencyTree: any[];
+}
+
 export interface ComparisonResult {
   changes: ChangeAnalysis;
+  dependencyComparison: DependencyComparison;
   gitDiff: GitDiffResult[];
   newFeatures: string[];
   improvements: string[];
   potentialIssues: string[];
+  securityIssues: AnalysisIssue[];
   compatibilityScore: number;
 }
 
@@ -51,11 +63,13 @@ export class AnalysisService {
   private repositoryAnalyzer: RepositoryAnalyzerService;
   private gitDiffAnalyzer: GitDiffAnalyzerService;
   private configService: AnalysisConfigService;
+  private dependencyAnalyzer: DependencyAnalyzerService;
 
   constructor() {
     this.repositoryAnalyzer = new RepositoryAnalyzerService();
     this.gitDiffAnalyzer = new GitDiffAnalyzerService();
     this.configService = new AnalysisConfigService();
+    this.dependencyAnalyzer = new DependencyAnalyzerService();
   }
 
   /**
@@ -125,6 +139,12 @@ export class AnalysisService {
           branch: repoConfig.branch,
           commitHash: '',
           structure: { directories: [], files: [], components: [], services: [], utilities: [], tests: [] },
+          dependencies: {
+            packageInfo: null,
+            vulnerabilities: [],
+            auditResults: [],
+            dependencyTree: []
+          },
           analysisDate: new Date(),
           isAccessible: false,
           error: 'Repository not accessible or credentials invalid'
@@ -164,11 +184,15 @@ export class AnalysisService {
       // Get project structure
       const structure = await this.repositoryAnalyzer.getProjectStructure(repoPath);
 
+      // Perform dependency analysis
+      const dependencies = await this.analyzeDependencies(repoPath);
+
       return {
         repository: repoConfig.url,
         branch,
         commitHash,
         structure,
+        dependencies,
         analysisDate: new Date(),
         isAccessible: true
       };
@@ -178,6 +202,12 @@ export class AnalysisService {
         branch: config.repositories[repositoryName].branch,
         commitHash: '',
         structure: { directories: [], files: [], components: [], services: [], utilities: [], tests: [] },
+        dependencies: {
+          packageInfo: null,
+          vulnerabilities: [],
+          auditResults: [],
+          dependencyTree: []
+        },
         analysisDate: new Date(),
         isAccessible: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -223,10 +253,17 @@ export class AnalysisService {
             dependencyChanges: [],
             configurationChanges: []
           },
+          dependencyComparison: {
+            added: [],
+            removed: [],
+            updated: [],
+            unchanged: []
+          },
           gitDiff: [],
           newFeatures: [],
           improvements: [],
           potentialIssues: ['Repository not accessible for comparison'],
+          securityIssues: [],
           compatibilityScore: 0
         };
       }
@@ -237,6 +274,9 @@ export class AnalysisService {
 
       // Perform change analysis
       const changes = await this.repositoryAnalyzer.analyzeChanges(baseRepoConfig, currentRepoConfig);
+
+      // Perform dependency comparison
+      const dependencyComparison = await this.compareDependencies(baseResult, currentResult);
 
       // Perform git diff analysis (if both are git repositories)
       let gitDiff: GitDiffResult[] = [];
@@ -262,16 +302,19 @@ export class AnalysisService {
         ...structureComparison.newUtilities.map(u => `New utility: ${u}`)
       ];
 
-      const improvements = this.identifyImprovements(changes);
-      const potentialIssues = this.identifyPotentialIssues(changes, config);
-      const compatibilityScore = this.calculateCompatibilityScore(changes, config);
+      const improvements = this.identifyImprovements(changes, dependencyComparison);
+      const potentialIssues = this.identifyPotentialIssues(changes, dependencyComparison, config);
+      const securityIssues = await this.identifySecurityIssues(currentResult);
+      const compatibilityScore = this.calculateCompatibilityScore(changes, dependencyComparison, config);
 
       return {
         changes,
+        dependencyComparison,
         gitDiff,
         newFeatures,
         improvements,
         potentialIssues,
+        securityIssues,
         compatibilityScore
       };
     } catch (error) {
@@ -280,9 +323,162 @@ export class AnalysisService {
   }
 
   /**
+   * Analyze dependencies for a repository
+   */
+  private async analyzeDependencies(repoPath: string): Promise<DependencyAnalysisInfo> {
+    try {
+      const packageJsonPath = `${repoPath}/package.json`;
+      
+      // Check if package.json exists
+      const fs = await import('fs/promises');
+      try {
+        await fs.access(packageJsonPath);
+      } catch {
+        return {
+          packageInfo: null,
+          vulnerabilities: [],
+          auditResults: [],
+          dependencyTree: []
+        };
+      }
+
+      const packageInfo = await this.dependencyAnalyzer.parsePackageJson(packageJsonPath);
+      const vulnerabilities = await this.dependencyAnalyzer.scanVulnerabilities(repoPath);
+      const securityIssues = await this.dependencyAnalyzer.generateDependencyIssues(repoPath);
+      const auditResults = await this.dependencyAnalyzer.analyzeDependencyImpact('', repoPath);
+      const dependencyTree = await this.dependencyAnalyzer.buildDependencyTree(repoPath);
+
+      return {
+        packageInfo,
+        vulnerabilities,
+        auditResults,
+        dependencyTree
+      };
+    } catch (error) {
+      console.warn(`Failed to analyze dependencies for ${repoPath}:`, error);
+      return {
+        packageInfo: null,
+        vulnerabilities: [],
+        auditResults: [],
+        dependencyTree: []
+      };
+    }
+  }
+
+  /**
+   * Compare dependencies between two repositories
+   */
+  private async compareDependencies(
+    baseResult: RepositoryAnalysisResult,
+    currentResult: RepositoryAnalysisResult
+  ): Promise<DependencyComparison> {
+    try {
+      if (!baseResult.dependencies.packageInfo || !currentResult.dependencies.packageInfo) {
+        return {
+          added: [],
+          removed: [],
+          updated: [],
+          unchanged: []
+        };
+      }
+
+      const baseDeps = {
+        ...baseResult.dependencies.packageInfo.dependencies,
+        ...baseResult.dependencies.packageInfo.devDependencies
+      };
+      
+      const currentDeps = {
+        ...currentResult.dependencies.packageInfo.dependencies,
+        ...currentResult.dependencies.packageInfo.devDependencies
+      };
+
+      const baseKeys = new Set(Object.keys(baseDeps));
+      const currentKeys = new Set(Object.keys(currentDeps));
+
+      const added = Array.from(currentKeys).filter(key => !baseKeys.has(key));
+      const removed = Array.from(baseKeys).filter(key => !currentKeys.has(key));
+      const unchanged: string[] = [];
+      const updated: Array<{
+        name: string;
+        oldVersion: string;
+        newVersion: string;
+        isBreaking: boolean;
+      }> = [];
+
+      for (const key of baseKeys) {
+        if (currentKeys.has(key)) {
+          const oldVersion = baseDeps[key];
+          const newVersion = currentDeps[key];
+          
+          if (oldVersion === newVersion) {
+            unchanged.push(key);
+          } else {
+            updated.push({
+              name: key,
+              oldVersion,
+              newVersion,
+              isBreaking: this.isBreakingVersionChange(oldVersion, newVersion)
+            });
+          }
+        }
+      }
+
+      return { added, removed, updated, unchanged };
+    } catch (error) {
+      console.warn('Failed to compare dependencies:', error);
+      return {
+        added: [],
+        removed: [],
+        updated: [],
+        unchanged: []
+      };
+    }
+  }
+
+  /**
+   * Identify security issues from repository analysis
+   */
+  private async identifySecurityIssues(result: RepositoryAnalysisResult): Promise<AnalysisIssue[]> {
+    const issues: AnalysisIssue[] = [];
+
+    // Convert vulnerability reports to analysis issues
+    result.dependencies.vulnerabilities.forEach(vuln => {
+      issues.push({
+        id: `vuln-${vuln.package}-${Date.now()}`,
+        ruleId: 'dependency-vulnerability',
+        severity: vuln.severity === 'critical' || vuln.severity === 'high' ? 'error' : 'warning',
+        message: `Security vulnerability in ${vuln.package}@${vuln.version}: ${vuln.title}`,
+        file: 'package.json',
+        suggestion: vuln.recommendation,
+        autoFixable: false
+      });
+    });
+
+    return issues;
+  }
+
+  /**
+   * Check if version change is breaking
+   */
+  private isBreakingVersionChange(oldVersion: string, newVersion: string): boolean {
+    const oldMajor = this.extractMajorVersion(oldVersion);
+    const newMajor = this.extractMajorVersion(newVersion);
+    return oldMajor !== newMajor && newMajor > oldMajor;
+  }
+
+  /**
+   * Extract major version number
+   */
+  private extractMajorVersion(version: string): number {
+    const cleaned = version.replace(/[\^~>=<]/, '');
+    const parts = cleaned.split('.');
+    return parseInt(parts[0]) || 0;
+  }
+
+  /**
    * Identify improvements from changes
    */
-  private identifyImprovements(changes: ChangeAnalysis): string[] {
+  private identifyImprovements(changes: ChangeAnalysis, dependencyComparison: DependencyComparison): string[] {
     const improvements: string[] = [];
 
     // Analyze added files for improvements
@@ -305,6 +501,18 @@ export class AnalysisService {
       }
     });
 
+    // Analyze new dependencies
+    dependencyComparison.added.forEach(dep => {
+      improvements.push(`New dependency added: ${dep}`);
+    });
+
+    // Analyze updated dependencies (non-breaking)
+    dependencyComparison.updated.forEach(dep => {
+      if (!dep.isBreaking) {
+        improvements.push(`Dependency updated: ${dep.name} (${dep.oldVersion} → ${dep.newVersion})`);
+      }
+    });
+
     // Analyze configuration changes
     changes.configurationChanges.forEach(config => {
       if (config.impact === 'additive') {
@@ -318,7 +526,7 @@ export class AnalysisService {
   /**
    * Identify potential issues from changes
    */
-  private identifyPotentialIssues(changes: ChangeAnalysis, config: AnalysisConfiguration): string[] {
+  private identifyPotentialIssues(changes: ChangeAnalysis, dependencyComparison: DependencyComparison, config: AnalysisConfiguration): string[] {
     const issues: string[] = [];
 
     // Check for breaking changes
@@ -353,13 +561,24 @@ export class AnalysisService {
       }
     });
 
+    // Check dependency comparison for issues
+    dependencyComparison.removed.forEach(dep => {
+      issues.push(`Removed dependency may cause issues: ${dep}`);
+    });
+
+    dependencyComparison.updated.forEach(dep => {
+      if (dep.isBreaking) {
+        issues.push(`Breaking dependency change: ${dep.name} (${dep.oldVersion} → ${dep.newVersion})`);
+      }
+    });
+
     return issues;
   }
 
   /**
    * Calculate compatibility score based on changes and rules
    */
-  private calculateCompatibilityScore(changes: ChangeAnalysis, config: AnalysisConfiguration): number {
+  private calculateCompatibilityScore(changes: ChangeAnalysis, dependencyComparison: DependencyComparison, config: AnalysisConfiguration): number {
     let score = 100;
     const compatibilityRules = config.compatibilityRules.filter(rule => rule.enabled);
 
@@ -390,6 +609,17 @@ export class AnalysisService {
     // Deduct points for breaking configuration changes
     changes.configurationChanges.forEach(configChange => {
       if (configChange.impact === 'breaking') {
+        score -= 15;
+      }
+    });
+
+    // Deduct points for dependency issues
+    dependencyComparison.removed.forEach(() => {
+      score -= 20;
+    });
+
+    dependencyComparison.updated.forEach(dep => {
+      if (dep.isBreaking) {
         score -= 15;
       }
     });
