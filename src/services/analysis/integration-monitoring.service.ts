@@ -1222,17 +1222,6 @@ export interface AnalyticsDashboard {
   refreshInterval: number;
 }
 
-  private async performSystemHealthCheck(): Promise<void> {
-    // Implementation for system health check
-    console.log('Performing system health check...');
-  }
-
-  private async getWidgetData(widget: MonitoringWidget, filters?: any): Promise<any> {
-    // Implementation for getting widget data
-    return {};
-  }
-}
-
 export interface DataRetentionPolicy {
   raw: number; // days
   aggregated: number; // days

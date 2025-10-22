@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Badge } from '@/components/ui/Badge';
+// Using native checkbox input
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { Alert, AlertDescription } from '@/components/ui/Alert';
 // Chart components would be imported from a chart library like recharts
@@ -270,10 +271,12 @@ export default function FeatureComparisonDashboard() {
               <div className="grid grid-cols-2 gap-2">
                 {FEATURE_CATEGORIES.map(category => (
                   <div key={category} className="flex items-center space-x-2">
-                    <Checkbox
+                    <input
+                      type="checkbox"
                       id={category}
                       checked={config.includeCategories?.includes(category) || false}
-                      onCheckedChange={(checked) => handleCategoryToggle(category, checked as boolean)}
+                      onChange={(e) => handleCategoryToggle(category, e.target.checked)}
+                      className="rounded border-gray-300"
                     />
                     <Label htmlFor={category} className="text-sm capitalize">
                       {category}
@@ -298,19 +301,15 @@ export default function FeatureComparisonDashboard() {
 
               <div className="space-y-2">
                 <Label htmlFor="reportFormat">Report Format</Label>
-                <Select
+                <select
                   value={config.reportFormat}
-                  onValueChange={(value) => setConfig(prev => ({ ...prev, reportFormat: value as any }))}
+                  onChange={(e) => setConfig(prev => ({ ...prev, reportFormat: e.target.value as any }))}
+                  className="w-full p-2 border border-gray-300 rounded-md"
                 >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="html">HTML</SelectItem>
-                    <SelectItem value="json">JSON</SelectItem>
-                    <SelectItem value="pdf">PDF</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="html">HTML</option>
+                  <option value="json">JSON</option>
+                  <option value="pdf">PDF</option>
+                </select>
               </div>
             </div>
           </div>
@@ -372,7 +371,7 @@ export default function FeatureComparisonDashboard() {
                   <div className="flex items-center space-x-2">
                     {getRiskIcon(quickSummary.overallRisk)}
                     <Badge 
-                      variant="outline" 
+                      variant="default" 
                       style={{ borderColor: getRiskColor(quickSummary.overallRisk) }}
                     >
                       {quickSummary.overallRisk}
@@ -408,11 +407,11 @@ export default function FeatureComparisonDashboard() {
                   </div>
                   <div className="flex justify-between">
                     <span>High Priority:</span>
-                    <Badge variant="destructive">{result.analysisResult.highPriorityGaps}</Badge>
+                    <Badge variant="error">{result.analysisResult.highPriorityGaps}</Badge>
                   </div>
                   <div className="flex justify-between">
                     <span>Implementation Phases:</span>
-                    <Badge variant="outline">{result.analysisResult.phases}</Badge>
+                    <Badge variant="default">{result.analysisResult.phases}</Badge>
                   </div>
                   <div className="flex justify-between">
                     <span>Estimated Effort:</span>
@@ -426,23 +425,20 @@ export default function FeatureComparisonDashboard() {
                   <CardTitle>Risk Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={riskData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}%`}
-                      >
-                        {riskData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div className="space-y-2">
+                    {riskData.map((entry, index) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                          <div 
+                            className="w-4 h-4 rounded" 
+                            style={{ backgroundColor: entry.color }}
+                          ></div>
+                          <span>{entry.name}</span>
+                        </div>
+                        <span className="font-semibold">{entry.value}%</span>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -470,15 +466,22 @@ export default function FeatureComparisonDashboard() {
                 <CardTitle>Feature Gaps by Category</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={categoryData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="category" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="gaps" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div className="space-y-3">
+                  {categoryData.map((item, index) => (
+                    <div key={index} className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="capitalize">{item.category}</span>
+                        <span className="font-semibold">{item.gaps} gaps</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{ width: `${(item.gaps / Math.max(...categoryData.map(d => d.gaps))) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -489,25 +492,23 @@ export default function FeatureComparisonDashboard() {
                 <CardTitle>Priority vs Complexity Matrix</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <ScatterChart data={priorityData}>
-                    <CartesianGrid />
-                    <XAxis 
-                      type="number" 
-                      dataKey="complexity" 
-                      name="Complexity"
-                      domain={[0, 4]}
-                    />
-                    <YAxis 
-                      type="number" 
-                      dataKey="value" 
-                      name="Business Value"
-                      domain={[0, 4]}
-                    />
-                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                    <Scatter dataKey="value" fill="#8884d8" />
-                  </ScatterChart>
-                </ResponsiveContainer>
+                <div className="grid grid-cols-4 gap-4 h-96 border border-gray-200 rounded p-4">
+                  <div className="text-xs text-gray-500 col-span-4 text-center mb-2">
+                    Business Value (Y-axis) vs Complexity (X-axis)
+                  </div>
+                  {priorityData.map((item, index) => (
+                    <div 
+                      key={index}
+                      className="absolute w-3 h-3 bg-blue-600 rounded-full flex items-center justify-center text-xs text-white"
+                      style={{
+                        left: `${(item.complexity / 4) * 80 + 10}%`,
+                        bottom: `${(item.value / 4) * 80 + 10}%`,
+                      }}
+                      title={`${item.name}: Value ${item.value}, Complexity ${item.complexity}`}
+                    >
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -523,11 +524,16 @@ export default function FeatureComparisonDashboard() {
                     <div key={i} className="border rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <h4 className="font-semibold">Phase {i + 1}</h4>
-                        <Badge variant="outline">
+                        <Badge variant="default">
                           Week {i * 2 + 1}-{(i + 1) * 2}
                         </Badge>
                       </div>
-                      <Progress value={(i + 1) * 20} className="mb-2" />
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full" 
+                          style={{ width: `${(i + 1) * 20}%` }}
+                        ></div>
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         Estimated duration: {2} weeks
                       </p>
@@ -551,7 +557,7 @@ export default function FeatureComparisonDashboard() {
                   Report ID: {result.report?.id}
                 </p>
               </div>
-              <Button variant="outline">
+              <Button variant="secondary">
                 <Download className="w-4 h-4 mr-2" />
                 Download Report
               </Button>

@@ -7,11 +7,11 @@ import {
   CardDescription, 
   CardHeader, 
   CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { 
   Calendar,
   Clock,
@@ -29,11 +29,23 @@ import {
 } from 'lucide-react';
 import {
   IntegrationPlan,
-  IntegrationPhase,
-  MigrationStep,
-  RiskLevel,
-  EffortEstimate
+  MigrationStep
 } from '@/services/analysis/integration-planning.service';
+
+// Local type definitions
+type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+interface EffortEstimate {
+  hours: number;
+  complexity: 'low' | 'medium' | 'high';
+}
+interface IntegrationPhase {
+  id: string;
+  name: string;
+  description?: string;
+  steps?: MigrationStep[];
+  dependencies?: string[];
+  estimatedDuration?: number;
+}
 import { PrioritizedFeature, PriorityMatrix } from '@/services/analysis/integration-priority-matrix.service';
 
 interface IntegrationPlanningDashboardProps {
@@ -201,7 +213,7 @@ export default function IntegrationPlanningDashboard({
               <span>Overall Progress</span>
               <span>{Math.round(calculateProgress())}%</span>
             </div>
-            <Progress value={calculateProgress()} className="h-2" />
+            <ProgressBar value={calculateProgress()} className="h-2" />
           </div>
         </CardContent>
       </Card>

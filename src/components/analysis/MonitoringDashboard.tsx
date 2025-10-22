@@ -7,11 +7,11 @@ import {
   CardDescription, 
   CardHeader, 
   CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { 
   Activity,
   AlertTriangle,
@@ -244,7 +244,7 @@ export default function MonitoringDashboard({
                 <span>System Availability</span>
                 <span>{systemHealth.metrics.overallAvailability.toFixed(2)}%</span>
               </div>
-              <Progress value={systemHealth.metrics.overallAvailability} className="h-2" />
+              <ProgressBar value={systemHealth.metrics.overallAvailability} className="h-2" />
             </div>
           </CardContent>
         </Card>
@@ -276,7 +276,7 @@ export default function MonitoringDashboard({
                         {systemHealth.metrics.averageResponseTime}ms
                       </span>
                     </div>
-                    <Progress 
+                    <ProgressBar 
                       value={Math.min((systemHealth.metrics.averageResponseTime / 1000) * 100, 100)} 
                       className="h-2" 
                     />
@@ -287,7 +287,7 @@ export default function MonitoringDashboard({
                         {(systemHealth.metrics.errorRate * 100).toFixed(3)}%
                       </span>
                     </div>
-                    <Progress 
+                    <ProgressBar 
                       value={systemHealth.metrics.errorRate * 100} 
                       className="h-2" 
                     />

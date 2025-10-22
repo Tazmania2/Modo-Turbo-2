@@ -4,7 +4,12 @@ import {
   vulnerabilityScanningAutomationService,
   securityRegressionTestService
 } from '@/services/analysis';
-import { Feature } from '@/types/analysis.types';
+// Using generic object for feature data
+interface Feature {
+  id: string;
+  name: string;
+  type: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,7 +99,7 @@ async function handleFeatureValidation(params: any) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Feature validation failed: ${error.message}` },
+      { error: `Feature validation failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -130,7 +135,7 @@ async function handleSecurityScan(params: any) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Security scan failed: ${error.message}` },
+      { error: `Security scan failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -159,7 +164,7 @@ async function handleRegressionTest(params: any) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Regression test failed: ${error.message}` },
+      { error: `Regression test failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -189,7 +194,7 @@ async function handleCreateBaseline(params: any) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Baseline creation failed: ${error.message}` },
+      { error: `Baseline creation failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -208,7 +213,7 @@ async function handleGetScanHistory(searchParams: URLSearchParams) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Failed to get scan history: ${error.message}` },
+      { error: `Failed to get scan history: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -224,7 +229,7 @@ async function handleGetBaselines() {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Failed to get baselines: ${error.message}` },
+      { error: `Failed to get baselines: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -243,7 +248,7 @@ async function handleGetRegressionHistory(searchParams: URLSearchParams) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Failed to get regression history: ${error.message}` },
+      { error: `Failed to get regression history: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -259,7 +264,7 @@ async function handleGetDashboardMetrics() {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Failed to get dashboard metrics: ${error.message}` },
+      { error: `Failed to get dashboard metrics: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
@@ -278,7 +283,7 @@ async function handleGetVulnerabilityTrends(searchParams: URLSearchParams) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: `Failed to get vulnerability trends: ${error.message}` },
+      { error: `Failed to get vulnerability trends: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }

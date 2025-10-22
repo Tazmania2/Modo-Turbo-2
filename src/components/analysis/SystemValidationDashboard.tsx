@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { 
   CheckCircle, 
   XCircle, 
@@ -198,7 +198,7 @@ export default function SystemValidationDashboard() {
                   <span>Overall Progress</span>
                   <span>{currentValidation.progress}%</span>
                 </div>
-                <Progress value={currentValidation.progress} className="h-2" />
+                <ProgressBar value={currentValidation.progress} className="h-2" />
               </div>
 
               <div className="grid grid-cols-4 gap-4">
@@ -230,7 +230,7 @@ export default function SystemValidationDashboard() {
                       </div>
                       <span className="text-sm text-gray-600">{phase.progress}%</span>
                     </div>
-                    <Progress value={phase.progress} className="h-1 mb-2" />
+                    <ProgressBar value={phase.progress} className="h-1 mb-2" />
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       {phase.tests.map((test, testIndex) => (
                         <div key={testIndex} className="flex items-center gap-2">
@@ -297,7 +297,7 @@ export default function SystemValidationDashboard() {
                   <span>Success Rate</span>
                   <span>{Math.round((validation.results.passed / validation.results.total) * 100)}%</span>
                 </div>
-                <Progress 
+                <ProgressBar 
                   value={(validation.results.passed / validation.results.total) * 100} 
                   className="h-2" 
                 />
