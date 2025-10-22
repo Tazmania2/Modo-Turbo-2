@@ -7,9 +7,15 @@ import {
   TestFailure
 } from './feature-integration.service';
 import { 
-  ValidationExecution,
-  ValidationResult
+  ValidationExecution
 } from './integration-validation.service';
+
+// Local interface for ValidationResult since it's not exported
+interface ValidationResult {
+  success: boolean;
+  message: string;
+  details?: any;
+}
 
 export interface TestSuite {
   id: string;

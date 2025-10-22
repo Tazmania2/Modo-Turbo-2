@@ -109,7 +109,7 @@ export class BundleSizeAnalyzerService {
         recommendations
       };
     } catch (error) {
-      throw new Error(`Bundle analysis failed: ${error.message}`);
+      throw new Error(`Bundle analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -160,7 +160,7 @@ export class BundleSizeAnalyzerService {
         cpuUsage: await this.estimateCpuUsage(bundleAnalysis)
       };
     } catch (error) {
-      throw new Error(`Performance metrics collection failed: ${error.message}`);
+      throw new Error(`Performance metrics collection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -187,7 +187,7 @@ export class BundleSizeAnalyzerService {
           recommendations: this.generateUIOptimizationRecommendations(componentSize, loadTimeImpact)
         });
       } catch (error) {
-        console.warn(`Failed to analyze component ${componentPath}: ${error.message}`);
+        console.warn(`Failed to analyze component ${componentPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
     
@@ -205,7 +205,7 @@ export class BundleSizeAnalyzerService {
         const command = 'npx webpack-bundle-analyzer .next/static/chunks/*.js --report --mode static --no-open';
         await execAsync(command, { cwd: projectPath });
       } catch (fallbackError) {
-        throw new Error(`Failed to generate webpack stats: ${fallbackError.message}`);
+        throw new Error(`Failed to generate webpack stats: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
       }
     }
   }

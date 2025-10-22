@@ -595,9 +595,10 @@ export class ASTParserService {
             });
           }
         }
-      } else if (statement.modifiers?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword)) {
+      } else if (ts.canHaveModifiers(statement) && ts.getModifiers(statement)?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword)) {
         // Handle export function, export class, etc.
-        const isDefault = statement.modifiers.some(mod => mod.kind === ts.SyntaxKind.DefaultKeyword);
+        const modifiers = ts.getModifiers(statement) || [];
+        const isDefault = modifiers.some(mod => mod.kind === ts.SyntaxKind.DefaultKeyword);
         
         if (ts.isFunctionDeclaration(statement) && statement.name) {
           exports.push({
@@ -769,9 +770,9 @@ export class ASTParserService {
           name: node.name.text,
           parameters,
           returnType: node.type ? node.type.getText() : 'any',
-          isAsync: !!node.modifiers?.some(mod => mod.kind === ts.SyntaxKind.AsyncKeyword),
-          isStatic: !!node.modifiers?.some(mod => mod.kind === ts.SyntaxKind.StaticKeyword),
-          visibility: this.getVisibility(node.modifiers),
+          isAsync: !!(ts.canHaveModifiers(node) && ts.getModifiers(node)?.some(mod => mod.kind === ts.SyntaxKind.AsyncKeyword)),
+          isStatic: !!(ts.canHaveModifiers(node) && ts.getModifiers(node)?.some(mod => mod.kind === ts.SyntaxKind.StaticKeyword)),
+          visibility: this.getVisibility(ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined),
           complexity: this.calculateCyclomaticComplexity(node)
         });
       }
@@ -886,13 +887,13 @@ export class ASTParserService {
           defaultValue: param.initializer ? param.initializer.getText() : undefined
         }));
 
-        const isExported = !!node.modifiers?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword);
+        const isExported = !!(ts.canHaveModifiers(node) && ts.getModifiers(node)?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword));
 
         functions.push({
           name: node.name.text,
           parameters,
           returnType: node.type ? node.type.getText() : 'any',
-          isAsync: !!node.modifiers?.some(mod => mod.kind === ts.SyntaxKind.AsyncKeyword),
+          isAsync: !!(ts.canHaveModifiers(node) && ts.getModifiers(node)?.some(mod => mod.kind === ts.SyntaxKind.AsyncKeyword)),
           isExported,
           complexity: this.calculateCyclomaticComplexity(node),
           purity: this.determineFunctionPurity(node)
@@ -914,7 +915,7 @@ export class ASTParserService {
 
     for (const statement of sourceFile.statements) {
       if (ts.isVariableStatement(statement)) {
-        const isExported = !!statement.modifiers?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword);
+        const isExported = !!(ts.canHaveModifiers(statement) && ts.getModifiers(statement)?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword));
         
         for (const declaration of statement.declarationList.declarations) {
           if (ts.isIdentifier(declaration.name)) {
@@ -939,7 +940,7 @@ export class ASTParserService {
     const types: TypeDefinition[] = [];
 
     for (const statement of sourceFile.statements) {
-      const isExported = !!statement.modifiers?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword);
+      const isExported = !!(ts.canHaveModifiers(statement) && ts.getModifiers(statement)?.some(mod => mod.kind === ts.SyntaxKind.ExportKeyword));
 
       if (ts.isInterfaceDeclaration(statement)) {
         const properties = statement.members.map(member => {
@@ -1124,7 +1125,7 @@ export class ASTParserService {
   /**
    * Get visibility from modifiers
    */
-  private getVisibility(modifiers?: ts.NodeArray<ts.Modifier>): 'public' | 'private' | 'protected' {
+  private getVisibility(modifiers?: ts.NodeArray<ts.Modifier> | readonly ts.Modifier[]): 'public' | 'private' | 'protected' {
     if (!modifiers) return 'public';
 
     for (const modifier of modifiers) {

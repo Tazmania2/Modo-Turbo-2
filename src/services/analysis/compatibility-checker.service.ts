@@ -116,8 +116,15 @@ export class CompatibilityCheckerService {
     const componentFiles = newFeatures.filter(f => f.type === 'component');
     for (const component of componentFiles) {
       const componentCheck = await this.checkComponentCompatibility(component);
-      if (!componentCheck.isCompatible) {
-        issues.push(...componentCheck.issues);
+      if (componentCheck.whiteLabelImpact === 'high' || componentCheck.whiteLabelImpact === 'medium') {
+        issues.push(...componentCheck.recommendations.map(rec => ({
+          type: 'compatibility',
+          severity: 'medium' as const,
+          file: component.path,
+          description: rec,
+          recommendation: rec,
+          autoFixable: false
+        })));
         score -= 10;
         if (!componentCheck.themeCompatibility.isCompatible) {
           themeSupport = false;

@@ -4,9 +4,15 @@ import {
   SecurityIssue, 
   SecurityVulnerability,
   FileAnalysis,
-  CodeChange,
   SecurityAnalysis
 } from '@/types/analysis.types';
+
+// Local interface for CodeChange since it's not exported
+interface CodeChange {
+  type: 'added' | 'modified' | 'removed';
+  file: string;
+  content?: string;
+}
 
 export interface CodeSecurityPattern {
   id: string;
@@ -229,7 +235,7 @@ export class CodeSecurityAnalyzerService {
     const recommendations: string[] = [];
 
     for (const change of changes) {
-      if (change.type === 'addition' || change.type === 'modification') {
+      if (change.type === 'added' || change.type === 'modified') {
         try {
           const scanResult = await this.scanFile(change.file);
           newVulnerabilities.push(...scanResult.vulnerabilities);
