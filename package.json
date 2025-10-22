@@ -28,7 +28,13 @@
     "analysis:setup": "npx tsx src/scripts/analysis-setup.ts setup",
     "analysis:test": "npx tsx src/scripts/analysis-setup.ts test",
     "analysis:run": "npx tsx src/scripts/analysis-setup.ts analyze",
-    "analysis:config": "npx tsx src/scripts/analysis-setup.ts config"
+    "analysis:config": "npx tsx src/scripts/analysis-setup.ts config",
+    "validate:system": "npx tsx src/scripts/execute-system-validation.ts",
+    "validate:comprehensive": "npx tsx src/scripts/execute-system-validation.ts --type comprehensive",
+    "validate:security": "npx tsx src/scripts/execute-system-validation.ts --type security",
+    "validate:deployment": "npx tsx src/scripts/execute-system-validation.ts --type deployment",
+    "validate:all": "npx tsx src/scripts/execute-system-validation.ts --type all",
+    "validate:final": "npx tsx src/scripts/final-integration-test.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.8",
