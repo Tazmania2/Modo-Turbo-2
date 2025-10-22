@@ -699,9 +699,7 @@ export class IntegrationMonitoringService {
     return data;
   }
 
-  // Private helper methods continue in next part...
-}  // Priv
-ate helper methods
+  // Private helper methods
 
   private initializeDefaultDashboard(): void {
     // Initialize with a default dashboard
@@ -1222,6 +1220,17 @@ export interface AnalyticsDashboard {
   audience: 'executive' | 'technical' | 'business';
   widgets: string[];
   refreshInterval: number;
+}
+
+  private async performSystemHealthCheck(): Promise<void> {
+    // Implementation for system health check
+    console.log('Performing system health check...');
+  }
+
+  private async getWidgetData(widget: MonitoringWidget, filters?: any): Promise<any> {
+    // Implementation for getting widget data
+    return {};
+  }
 }
 
 export interface DataRetentionPolicy {

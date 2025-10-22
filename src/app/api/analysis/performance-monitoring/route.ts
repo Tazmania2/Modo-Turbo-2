@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runtimePerformanceAnalyzerService } from '@/services/analysis/runtime-performance-analyzer.service';
+import { RuntimePerformanceAnalyzer } from '@/services/analysis/runtime-performance-analyzer.service';
 import { bundleSizeAnalyzerService } from '@/services/analysis/bundle-size-analyzer.service';
+
+const runtimePerformanceAnalyzer = new RuntimePerformanceAnalyzer();
 
 interface PerformanceMetrics {
   timestamp: number;
@@ -129,26 +131,15 @@ async function collectCurrentMetrics(): Promise<PerformanceMetrics> {
     const bundleAnalysis = await bundleSizeAnalyzerService.analyzeBundleSize(projectPath);
     
     // Collect runtime performance metrics
-    const runtimeAnalysis = await runtimePerformanceAnalyzerService.analyzeRuntimePerformance(
-      projectPath,
-      {
-        duration: 10, // 10 seconds
-        sampleRate: 1, // 1 sample per second
-        includeMemory: true,
-        includeCpu: true,
-        includeNetwork: false,
-        includeRendering: true,
-        components: []
-      }
-    );
+    const runtimeAnalysis = await runtimePerformanceAnalyzer.getCurrentMetrics();
     
     return {
       timestamp: Date.now(),
       bundleSize: bundleAnalysis.totalSize,
       loadTime: 1500 + Math.random() * 500, // Simulated load time
       renderTime: 800 + Math.random() * 300, // Simulated render time
-      memoryUsage: runtimeAnalysis.memoryUsage.totalMemory,
-      cpuUsage: runtimeAnalysis.cpuUsage.averageUsage
+      memoryUsage: runtimeAnalysis.memoryUsage.used,
+      cpuUsage: runtimeAnalysis.cpuUsage.overall
     };
   } catch (error) {
     console.error('Failed to collect metrics:', error);
