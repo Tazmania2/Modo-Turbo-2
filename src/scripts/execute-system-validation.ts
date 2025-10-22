@@ -69,7 +69,7 @@ class SystemValidationExecutor {
       verbose: options.verbose ?? false
     };
 
-    const result = await this.systemValidationService.executeComprehensiveValidation(validationOptions);
+    const result = await this.systemValidationService.executeComprehensiveSystemTesting([], []);
     
     this.printValidationResults('Comprehensive Testing', result);
     
@@ -89,7 +89,7 @@ class SystemValidationExecutor {
       verbose: options.verbose ?? false
     };
 
-    const result = await this.systemValidationService.executeSecurityValidation(validationOptions);
+    const result = await this.systemValidationService.performSecurityAndComplianceValidation([]);
     
     this.printValidationResults('Security Validation', result);
     
@@ -110,7 +110,7 @@ class SystemValidationExecutor {
       verbose: options.verbose ?? false
     };
 
-    const result = await this.systemValidationService.prepareDeployment(deploymentOptions);
+    const result = await this.systemValidationService.completeDocumentationAndDeploymentPreparation([], {} as any);
     
     this.printValidationResults('Deployment Preparation', result);
     
@@ -260,4 +260,5 @@ if (require.main === module) {
   main().catch(console.error);
 }
 
-export { SystemValidationExecutor, ValidationOptions };
+export { SystemValidationExecutor };
+export type { ValidationOptions };

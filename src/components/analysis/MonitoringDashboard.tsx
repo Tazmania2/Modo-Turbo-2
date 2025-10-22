@@ -409,7 +409,7 @@ export default function MonitoringDashboard({
                             {new Date(alert.timestamp).toLocaleString()}
                           </p>
                         </div>
-                        <Badge variant={alert.status === 'open' ? 'destructive' : 'secondary'}>
+                        <Badge variant={alert.status === 'open' ? 'error' : 'info'}>
                           {alert.status}
                         </Badge>
                       </div>

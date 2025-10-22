@@ -186,7 +186,7 @@ export default function SystemValidationDashboard() {
             <CardTitle className="flex items-center gap-2">
               {getStatusIcon(currentValidation.status)}
               Current Validation: {currentValidation.type}
-              <Badge variant={currentValidation.status === 'completed' ? 'default' : 'secondary'}>
+              <Badge variant={currentValidation.status === 'completed' ? 'default' : 'info'}>
                 {currentValidation.status}
               </Badge>
             </CardTitle>
@@ -267,7 +267,7 @@ export default function SystemValidationDashboard() {
                                 </div>
                               )}
                             </div>
-                            <Badge variant="outline" className={getSeverityColor(issue.severity)}>
+                            <Badge variant="default" className={getSeverityColor(issue.severity)}>
                               {issue.severity}
                             </Badge>
                           </div>

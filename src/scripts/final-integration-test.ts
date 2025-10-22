@@ -49,13 +49,13 @@ class FinalIntegrationTest {
 
   async runFinalIntegration(): Promise<void> {
     console.log('🚀 Starting Final Integration and System Validation');
-    console.log('=' * 60);
+    console.log('='.repeat(60));
     console.log(`Timestamp: ${this.results.timestamp}\n`);
 
     try {
       // Phase 1: Comprehensive System Testing
       console.log('📋 Phase 1: Comprehensive System Testing');
-      console.log('-' * 40);
+      console.log('-'.repeat(40));
       
       const comprehensiveResult = await this.runComprehensiveTests();
       this.results.phases.comprehensive = comprehensiveResult;
@@ -66,7 +66,7 @@ class FinalIntegrationTest {
 
       // Phase 2: Security and Compliance Validation
       console.log('🔒 Phase 2: Security and Compliance Validation');
-      console.log('-' * 40);
+      console.log('-'.repeat(40));
       
       const securityResult = await this.runSecurityValidation();
       this.results.phases.security = securityResult;
@@ -77,7 +77,7 @@ class FinalIntegrationTest {
 
       // Phase 3: Deployment Preparation
       console.log('🚀 Phase 3: Deployment Preparation');
-      console.log('-' * 40);
+      console.log('-'.repeat(40));
       
       const deploymentResult = await this.runDeploymentPreparation();
       this.results.phases.deployment = deploymentResult;
@@ -225,9 +225,9 @@ class FinalIntegrationTest {
   }
 
   private printFinalSummary(): void {
-    console.log('\n' + '=' * 60);
+    console.log('\n' + '='.repeat(60));
     console.log('📊 FINAL INTEGRATION TEST SUMMARY');
-    console.log('=' * 60);
+    console.log('='.repeat(60));
     
     const statusIcon = this.results.overallStatus === 'passed' ? '✅' : 
                       this.results.overallStatus === 'warning' ? '⚠️' : '❌';
@@ -271,7 +271,7 @@ class FinalIntegrationTest {
       console.log('🛑 System is not ready for deployment');
     }
     
-    console.log('=' * 60);
+    console.log('='.repeat(60));
   }
 
   private async generateFinalReport(): Promise<void> {

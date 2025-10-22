@@ -8,32 +8,14 @@ import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
-import { 
   Activity, 
   TrendingUp, 
   TrendingDown, 
   AlertTriangle, 
-  CheckCircle,
-  Clock,
-  Cpu,
-  HardDrive,
+  Clock, 
   Zap,
-  RefreshCw
+  Database,
+  Monitor
 } from 'lucide-react';
 
 interface PerformanceMetrics {
@@ -45,428 +27,184 @@ interface PerformanceMetrics {
   cpuUsage: number;
 }
 
-interface PerformanceAlert {
-  id: string;
-  type: 'regression' | 'improvement' | 'warning';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  message: string;
-  timestamp: number;
-  metric: string;
-  value: number;
-  threshold: number;
-}
-
-interface PerformanceTrend {
-  metric: string;
-  trend: 'increasing' | 'decreasing' | 'stable';
-  change: number;
-  period: string;
-}
-
 export default function PerformanceMonitoringDashboard() {
   const [performanceData, setPerformanceData] = useState<PerformanceMetrics[]>([]);
-  const [alerts, setAlerts] = useState<PerformanceAlert[]>([]);
-  const [trends, setTrends] = useState<PerformanceTrend[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isMonitoring, setIsMonitoring] = useState(false);
-  const [selectedTimeRange, setSelectedTimeRange] = useState('24h');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadPerformanceData();
-    loadAlerts();
-    loadTrends();
-  }, [selectedTimeRange]);
+    fetchPerformanceData();
+  }, []);
 
-  const loadPerformanceData = async () => {
+  const fetchPerformanceData = async () => {
     try {
-      setIsLoading(true);
-      const response = await fetch(`/api/analysis/performance-monitoring?range=${selectedTimeRange}`);
+      const response = await fetch('/api/analysis/performance-monitoring');
       const data = await response.json();
       setPerformanceData(data.metrics || []);
+      setIsMonitoring(data.isMonitoring || false);
     } catch (error) {
-      console.error('Failed to load performance data:', error);
+      console.error('Failed to fetch performance data:', error);
+    }
+  };
+
+  const toggleMonitoring = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/analysis/performance-monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: isMonitoring ? 'stop' : 'start' })
+      });
+      
+      const result = await response.json();
+      setIsMonitoring(result.isMonitoring);
+      
+      if (result.isMonitoring) {
+        // Start polling for updates
+        const interval = setInterval(fetchPerformanceData, 5000);
+        return () => clearInterval(interval);
+      }
+    } catch (error) {
+      console.error('Failed to toggle monitoring:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const loadAlerts = async () => {
-    try {
-      const response = await fetch('/api/analysis/performance-alerts');
-      const data = await response.json();
-      setAlerts(data.alerts || []);
-    } catch (error) {
-      console.error('Failed to load alerts:', error);
-    }
+  const getCurrentMetrics = (): PerformanceMetrics | null => {
+    return performanceData.length > 0 ? performanceData[performanceData.length - 1] : null;
   };
 
-  const loadTrends = async () => {
-    try {
-      const response = await fetch('/api/analysis/performance-trends');
-      const data = await response.json();
-      setTrends(data.trends || []);
-    } catch (error) {
-      console.error('Failed to load trends:', error);
-    }
-  };
-
-  const startMonitoring = async () => {
-    try {
-      setIsMonitoring(true);
-      await fetch('/api/analysis/performance-monitoring/start', { method: 'POST' });
-      // Refresh data every 30 seconds while monitoring
-      const interval = setInterval(loadPerformanceData, 30000);
-      return () => clearInterval(interval);
-    } catch (error) {
-      console.error('Failed to start monitoring:', error);
-      setIsMonitoring(false);
-    }
-  };
-
-  const stopMonitoring = async () => {
-    try {
-      await fetch('/api/analysis/performance-monitoring/stop', { method: 'POST' });
-      setIsMonitoring(false);
-    } catch (error) {
-      console.error('Failed to stop monitoring:', error);
-    }
-  };
-
-  const getAlertIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'high':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
-      case 'medium':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      default:
-        return <AlertTriangle className="h-4 w-4 text-blue-500" />;
-    }
-  };
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'increasing':
-        return <TrendingUp className="h-4 w-4 text-red-500" />;
-      case 'decreasing':
-        return <TrendingDown className="h-4 w-4 text-green-500" />;
-      default:
-        return <Activity className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formatTime = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(2)}s`;
-  };
-
-  const getCurrentMetrics = () => {
-    if (performanceData.length === 0) return null;
-    return performanceData[performanceData.length - 1];
+  const getMetricTrend = (metric: keyof PerformanceMetrics): 'up' | 'down' | 'stable' => {
+    if (performanceData.length < 2) return 'stable';
+    
+    const current = performanceData[performanceData.length - 1][metric];
+    const previous = performanceData[performanceData.length - 2][metric];
+    
+    if (current > previous * 1.05) return 'up';
+    if (current < previous * 0.95) return 'down';
+    return 'stable';
   };
 
   const currentMetrics = getCurrentMetrics();
 
-  const pieChartData = currentMetrics ? [
-    { name: 'Bundle Size', value: currentMetrics.bundleSize, color: '#8884d8' },
-    { name: 'Memory Usage', value: currentMetrics.memoryUsage, color: '#82ca9d' },
-    { name: 'CPU Usage', value: currentMetrics.cpuUsage, color: '#ffc658' }
-  ] : [];
-
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Performance Monitoring</h1>
-          <p className="text-muted-foreground">
-            Real-time performance metrics and trend analysis
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <select
-            value={selectedTimeRange}
-            onChange={(e) => setSelectedTimeRange(e.target.value)}
-            className="px-3 py-2 border rounded-md"
-          >
-            <option value="1h">Last Hour</option>
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-          </select>
-          <Button
-            onClick={isMonitoring ? stopMonitoring : startMonitoring}
-            variant={isMonitoring ? "destructive" : "default"}
-            disabled={isLoading}
-          >
-            {isMonitoring ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Stop Monitoring
-              </>
-            ) : (
-              <>
-                <Activity className="h-4 w-4 mr-2" />
-                Start Monitoring
-              </>
-            )}
-          </Button>
-        </div>
+        <h1 className="text-3xl font-bold">Performance Monitoring</h1>
+        <Button
+          onClick={toggleMonitoring}
+          disabled={loading}
+          variant={isMonitoring ? 'secondary' : 'primary'}
+        >
+          {isMonitoring ? 'Stop Monitoring' : 'Start Monitoring'}
+        </Button>
       </div>
 
-      {/* Current Metrics Cards */}
       {currentMetrics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Bundle Size</CardTitle>
-              <HardDrive className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatBytes(currentMetrics.bundleSize)}</div>
-              <p className="text-xs text-muted-foreground">
-                Current bundle size
-              </p>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Bundle Size</p>
+                  <p className="text-2xl font-bold">{(currentMetrics.bundleSize / 1024 / 1024).toFixed(2)}MB</p>
+                </div>
+                <div className="flex items-center">
+                  {getMetricTrend('bundleSize') === 'up' && <TrendingUp className="h-4 w-4 text-red-500" />}
+                  {getMetricTrend('bundleSize') === 'down' && <TrendingDown className="h-4 w-4 text-green-500" />}
+                  {getMetricTrend('bundleSize') === 'stable' && <Activity className="h-4 w-4 text-gray-500" />}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Load Time</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatTime(currentMetrics.loadTime)}</div>
-              <p className="text-xs text-muted-foreground">
-                Average load time
-              </p>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Load Time</p>
+                  <p className="text-2xl font-bold">{currentMetrics.loadTime}ms</p>
+                </div>
+                <div className="flex items-center">
+                  {getMetricTrend('loadTime') === 'up' && <TrendingUp className="h-4 w-4 text-red-500" />}
+                  {getMetricTrend('loadTime') === 'down' && <TrendingDown className="h-4 w-4 text-green-500" />}
+                  {getMetricTrend('loadTime') === 'stable' && <Clock className="h-4 w-4 text-gray-500" />}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Memory Usage</CardTitle>
-              <HardDrive className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatBytes(currentMetrics.memoryUsage)}</div>
-              <p className="text-xs text-muted-foreground">
-                Current memory usage
-              </p>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Memory Usage</p>
+                  <p className="text-2xl font-bold">{(currentMetrics.memoryUsage / 1024 / 1024).toFixed(0)}MB</p>
+                </div>
+                <div className="flex items-center">
+                  {getMetricTrend('memoryUsage') === 'up' && <TrendingUp className="h-4 w-4 text-red-500" />}
+                  {getMetricTrend('memoryUsage') === 'down' && <TrendingDown className="h-4 w-4 text-green-500" />}
+                  {getMetricTrend('memoryUsage') === 'stable' && <Database className="h-4 w-4 text-gray-500" />}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">CPU Usage</CardTitle>
-              <Cpu className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{currentMetrics.cpuUsage.toFixed(1)}%</div>
-              <p className="text-xs text-muted-foreground">
-                Current CPU usage
-              </p>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">CPU Usage</p>
+                  <p className="text-2xl font-bold">{currentMetrics.cpuUsage.toFixed(1)}%</p>
+                </div>
+                <div className="flex items-center">
+                  {getMetricTrend('cpuUsage') === 'up' && <TrendingUp className="h-4 w-4 text-red-500" />}
+                  {getMetricTrend('cpuUsage') === 'down' && <TrendingDown className="h-4 w-4 text-green-500" />}
+                  {getMetricTrend('cpuUsage') === 'stable' && <Zap className="h-4 w-4 text-gray-500" />}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Performance Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {alerts.slice(0, 5).map((alert) => (
-                <Alert key={alert.id} className="border-l-4 border-l-orange-500">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {getAlertIcon(alert.severity)}
-                      <span className="font-medium">{alert.message}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={alert.type === 'regression' ? 'destructive' : 'default'}>
-                        {alert.type}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(alert.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
-                  </div>
-                </Alert>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Performance Charts */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="bundle">Bundle Analysis</TabsTrigger>
-          <TabsTrigger value="runtime">Runtime Performance</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
+          <TabsTrigger value="alerts">Alerts</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Performance Timeline</CardTitle>
+                <CardTitle>Performance Trends</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="timestamp" 
-                      tickFormatter={(value) => new Date(value).toLocaleTimeString()}
-                    />
-                    <YAxis />
-                    <Tooltip 
-                      labelFormatter={(value) => new Date(value).toLocaleString()}
-                      formatter={(value, name) => {
-                        if (name === 'bundleSize' || name === 'memoryUsage') {
-                          return [formatBytes(value as number), name];
-                        }
-                        if (name === 'loadTime' || name === 'renderTime') {
-                          return [formatTime(value as number), name];
-                        }
-                        return [value, name];
-                      }}
-                    />
-                    <Line type="monotone" dataKey="loadTime" stroke="#8884d8" name="Load Time" />
-                    <Line type="monotone" dataKey="renderTime" stroke="#82ca9d" name="Render Time" />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="h-72 flex items-center justify-center border border-gray-200 rounded">
+                  <div className="text-center text-gray-500">
+                    <Activity className="h-12 w-12 mx-auto mb-2" />
+                    <p>Performance Chart</p>
+                    <p className="text-sm">Load Time & Render Time Trends</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Resource Usage Distribution</CardTitle>
+                <CardTitle>Resource Usage</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value, name) => {
-                      if (name === 'Bundle Size' || name === 'Memory Usage') {
-                        return [formatBytes(value as number), name];
-                      }
-                      return [value, name];
-                    }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="bundle" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bundle Size Over Time</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={performanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="timestamp" 
-                    tickFormatter={(value) => new Date(value).toLocaleTimeString()}
-                  />
-                  <YAxis tickFormatter={(value) => formatBytes(value)} />
-                  <Tooltip 
-                    labelFormatter={(value) => new Date(value).toLocaleString()}
-                    formatter={(value) => [formatBytes(value as number), 'Bundle Size']}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="bundleSize" 
-                    stroke="#8884d8" 
-                    fill="#8884d8" 
-                    fillOpacity={0.6}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="runtime" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Memory Usage</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="timestamp" 
-                      tickFormatter={(value) => new Date(value).toLocaleTimeString()}
-                    />
-                    <YAxis tickFormatter={(value) => formatBytes(value)} />
-                    <Tooltip 
-                      labelFormatter={(value) => new Date(value).toLocaleString()}
-                      formatter={(value) => [formatBytes(value as number), 'Memory Usage']}
-                    />
-                    <Line type="monotone" dataKey="memoryUsage" stroke="#82ca9d" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>CPU Usage</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={performanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="timestamp" 
-                      tickFormatter={(value) => new Date(value).toLocaleTimeString()}
-                    />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip 
-                      labelFormatter={(value) => new Date(value).toLocaleString()}
-                      formatter={(value) => [`${value}%`, 'CPU Usage']}
-                    />
-                    <Line type="monotone" dataKey="cpuUsage" stroke="#ffc658" />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="h-72 flex items-center justify-center border border-gray-200 rounded">
+                  <div className="text-center text-gray-500">
+                    <Monitor className="h-12 w-12 mx-auto mb-2" />
+                    <p>Resource Chart</p>
+                    <p className="text-sm">Memory & CPU Usage</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -475,35 +213,74 @@ export default function PerformanceMonitoringDashboard() {
         <TabsContent value="trends" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Performance Trends</CardTitle>
+              <CardTitle>Historical Performance Data</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {trends.map((trend, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {getTrendIcon(trend.trend)}
-                      <div>
-                        <h3 className="font-medium">{trend.metric}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {trend.period} trend
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${
-                        trend.trend === 'increasing' ? 'text-red-500' : 
-                        trend.trend === 'decreasing' ? 'text-green-500' : 
-                        'text-gray-500'
-                      }`}>
-                        {trend.change > 0 ? '+' : ''}{trend.change.toFixed(1)}%
-                      </div>
-                      <Badge variant={trend.trend === 'increasing' ? 'destructive' : 'default'}>
-                        {trend.trend}
+                {performanceData.slice(-10).map((metric, index) => (
+                  <div key={index} className="flex justify-between items-center p-3 border rounded">
+                    <div className="flex items-center space-x-4">
+                      <span className="text-sm text-gray-500">
+                        {new Date(metric.timestamp).toLocaleTimeString()}
+                      </span>
+                      <Badge variant="default">
+                        Load: {metric.loadTime}ms
                       </Badge>
+                      <Badge variant="info">
+                        Memory: {(metric.memoryUsage / 1024 / 1024).toFixed(0)}MB
+                      </Badge>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">CPU: {metric.cpuUsage.toFixed(1)}%</span>
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="alerts" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Alerts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {currentMetrics && currentMetrics.loadTime > 3000 && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Load time is above 3 seconds ({currentMetrics.loadTime}ms). Consider optimizing bundle size.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {currentMetrics && currentMetrics.cpuUsage > 80 && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      CPU usage is high ({currentMetrics.cpuUsage.toFixed(1)}%). Monitor for performance issues.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {currentMetrics && (currentMetrics.memoryUsage / 1024 / 1024) > 100 && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Memory usage is high ({(currentMetrics.memoryUsage / 1024 / 1024).toFixed(0)}MB). Check for memory leaks.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {(!currentMetrics || (currentMetrics.loadTime <= 3000 && currentMetrics.cpuUsage <= 80 && (currentMetrics.memoryUsage / 1024 / 1024) <= 100)) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Activity className="h-12 w-12 mx-auto mb-2" />
+                    <p>No performance alerts at this time</p>
+                    <p className="text-sm">System is performing within normal parameters</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

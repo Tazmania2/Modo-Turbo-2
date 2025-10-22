@@ -45,6 +45,9 @@ interface IntegrationPhase {
   steps?: MigrationStep[];
   dependencies?: string[];
   estimatedDuration?: number;
+  features?: any[];
+  riskLevel?: RiskLevel;
+  prerequisites?: string[];
 }
 import { PrioritizedFeature, PriorityMatrix } from '@/services/analysis/integration-priority-matrix.service';
 
@@ -336,17 +339,17 @@ function PhaseDetails({
           <div>
             <h4 className="font-medium mb-2">Phase Information</h4>
             <div className="space-y-1 text-sm">
-              <div>Features: {phase.features.length}</div>
+              <div>Features: {phase.features?.length || 0}</div>
               <div>Duration: {phase.estimatedDuration} hours</div>
-              <div>Risk Level: <Badge className={`ml-1 ${getRiskColor(phase.riskLevel)}`}>{phase.riskLevel}</Badge></div>
+              <div>Risk Level: <Badge className={`ml-1 ${getRiskColor(phase.riskLevel || 'low')}`}>{phase.riskLevel || 'low'}</Badge></div>
             </div>
           </div>
           <div>
             <h4 className="font-medium mb-2">Dependencies</h4>
             <div className="space-y-1">
-              {phase.dependencies.length > 0 ? (
-                phase.dependencies.map((dep, index) => (
-                  <Badge key={index} variant="outline" className="mr-1">
+              {(phase.dependencies?.length || 0) > 0 ? (
+                phase.dependencies?.map((dep, index) => (
+                  <Badge key={index} variant="default" className="mr-1">
                     {dep}
                   </Badge>
                 ))
@@ -360,7 +363,7 @@ function PhaseDetails({
         <div>
           <h4 className="font-medium mb-2">Features in this Phase</h4>
           <div className="space-y-2">
-            {phase.features.map((featureId, index) => (
+            {phase.features?.map((featureId, index) => (
               <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <span className="text-sm">{featureId}</span>
                 <CheckCircle className="h-4 w-4 text-green-600" />
@@ -369,11 +372,11 @@ function PhaseDetails({
           </div>
         </div>
 
-        {phase.prerequisites.length > 0 && (
+        {(phase.prerequisites?.length || 0) > 0 && (
           <div>
             <h4 className="font-medium mb-2">Prerequisites</h4>
             <div className="space-y-1">
-              {phase.prerequisites.map((prereq, index) => (
+              {phase.prerequisites?.map((prereq, index) => (
                 <div key={index} className="text-sm text-gray-600">• {prereq}</div>
               ))}
             </div>
@@ -538,7 +541,7 @@ function TestingStrategyView({ plan }: { plan: IntegrationPlan }) {
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium">{phase.name}</h4>
                   <div className="flex items-center gap-2">
-                    <Badge variant={phase.automatable ? 'default' : 'secondary'}>
+                    <Badge variant={phase.automatable ? 'default' : 'info'}>
                       {phase.automatable ? 'Automated' : 'Manual'}
                     </Badge>
                     <span className="text-sm text-gray-500">{phase.estimatedHours}h</span>
