@@ -637,16 +637,18 @@ export class IntegrationMonitoringService {
             retentionRate: 0
           },
           performance: {
-            loadTime: 0,
-            firstContentfulPaint: 0,
-            largestContentfulPaint: 0,
-            cumulativeLayoutShift: 0,
-            firstInputDelay: 0,
-            totalBlockingTime: 0,
-            speedIndex: 0,
-            networkRequests: 0,
-            transferSize: 0,
-            resourceSize: 0
+            feature: featureId,
+            startTime: new Date(),
+            endTime: new Date(),
+            samples: [],
+            averages: {
+              responseTime: 0,
+              errorRate: 0,
+              throughput: 0,
+              memoryUsage: 0,
+              cpuUsage: 0
+            },
+            alerts: []
           },
           reliability: {
             uptime: 100,
@@ -763,7 +765,9 @@ export class IntegrationMonitoringService {
             healthy: '#10b981',
             warning: '#f59e0b',
             critical: '#ef4444'
-          }
+          },
+          filters: {},
+          displayOptions: {}
         },
         position: { x: 0, y: 0 },
         size: { width: 6, height: 2 },
@@ -787,7 +791,9 @@ export class IntegrationMonitoringService {
             degraded: '#f59e0b',
             failed: '#ef4444'
           },
-          chartType: 'table'
+          chartType: 'table',
+          filters: {},
+          displayOptions: {}
         },
         position: { x: 6, y: 0 },
         size: { width: 6, height: 2 },
@@ -815,7 +821,9 @@ export class IntegrationMonitoringService {
             throughput: '#10b981',
             errorRate: '#ef4444'
           },
-          chartType: 'line'
+          chartType: 'line',
+          filters: {},
+          displayOptions: {}
         },
         position: { x: 0, y: 2 },
         size: { width: 8, height: 3 },
@@ -840,7 +848,9 @@ export class IntegrationMonitoringService {
             error: '#ef4444',
             critical: '#dc2626'
           },
-          chartType: 'table'
+          chartType: 'table',
+          filters: {},
+          displayOptions: {}
         },
         position: { x: 8, y: 2 },
         size: { width: 4, height: 3 },
@@ -1116,7 +1126,7 @@ export class IntegrationMonitoringService {
           name: f.featureName,
           status: f.status,
           adoption: f.metrics.usage.adoptionRate,
-          performance: f.metrics.performance.loadTime
+          performance: f.metrics.performance.averages.responseTime
         }));
       case 'performance-metrics':
         return {

@@ -1203,7 +1203,10 @@ Features are scored using weighted criteria and ranked by priority to inform imp
         indicators: risk.triggers // Simplified mapping
       })),
       mitigationStrategies: plan.riskMitigation.mitigationStrategies,
-      contingencyPlans: plan.riskMitigation.contingencyPlans
+      contingencyPlans: plan.riskMitigation.contingencyPlans.map(cp => ({
+        ...cp,
+        cost: 'medium' as const
+      }))
     };
   }
 

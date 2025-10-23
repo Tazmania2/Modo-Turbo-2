@@ -748,7 +748,7 @@ export class FeatureIntegrationService {
   }
 
   private requiresConfigUpdate(feature: PrioritizedFeature): boolean {
-    return feature.category === 'admin' || feature.category === 'integration';
+    return feature.category === 'security' || feature.category === 'monitoring';
   }
 
   private requiresEnvUpdate(feature: PrioritizedFeature): boolean {

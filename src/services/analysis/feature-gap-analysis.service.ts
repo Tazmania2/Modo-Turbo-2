@@ -139,7 +139,8 @@ export class FeatureGapAnalysisService {
       };
     } catch (error) {
       console.error('Error performing gap analysis:', error);
-      throw new Error(`Failed to perform gap analysis: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to perform gap analysis: ${errorMessage}`);
     }
   }
 

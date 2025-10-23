@@ -4,9 +4,11 @@ import {
   PerformanceMetrics
 } from './comprehensive-testing.service';
 import { 
-  ValidationExecution,
-  ValidationResult
+  ValidationExecution
 } from './integration-validation.service';
+import {
+  ValidationResult
+} from './feature-integration.service';
 import { 
   ValidationReport,
   ValidationMetrics,
@@ -935,10 +937,13 @@ export class ContinuousValidationMonitoringService {
   private determineStatus(issues: MonitoringIssue[]): 'success' | 'warning' | 'error' | 'critical' {
     if (issues.length === 0) return 'success';
     
-    const maxSeverity = issues.reduce((max, issue) => {
-      const severityOrder = { 'info': 0, 'warning': 1, 'error': 2, 'critical': 3 };
-      return severityOrder[issue.severity] > severityOrder[max] ? issue.severity : max;
-    }, 'info' as any);
+    type SeverityLevel = 'info' | 'warning' | 'error' | 'critical';
+    const severityOrder: Record<SeverityLevel, number> = { 'info': 0, 'warning': 1, 'error': 2, 'critical': 3 };
+    
+    const maxSeverity = issues.reduce((max: SeverityLevel, issue) => {
+      const issueSeverity = issue.severity as SeverityLevel;
+      return severityOrder[issueSeverity] > severityOrder[max] ? issueSeverity : max;
+    }, 'info' as SeverityLevel);
 
     return maxSeverity === 'info' ? 'success' : maxSeverity;
   }
