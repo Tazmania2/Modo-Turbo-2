@@ -23,7 +23,7 @@ export const LoadingExamples: React.FC = () => {
   const [showDataFetching, setShowDataFetching] = useState(false);
   const [skeletonType, setSkeletonType] = useState<'dashboard' | 'ranking' | 'history'>('dashboard');
   
-  const [loadingState, loadingActions] = useLoadingState();
+  const { isLoading, elapsedTime, startLoading, stopLoading, resetLoading } = useLoadingState();
   const { showSuccess, showError, showInfo, showWarning } = useToast();
 
   const simulateProgress = () => {
@@ -41,23 +41,24 @@ export const LoadingExamples: React.FC = () => {
 
   const simulateAsyncOperation = async () => {
     try {
-      await loadingActions.executeWithLoading(
-        () => new Promise((resolve) => setTimeout(resolve, 2000)),
-        {
-          timeout: 5000,
-          onTimeout: () => showWarning('Operation timed out', 'Please try again'),
-          onSuccess: () => showSuccess('Operation completed', 'Data loaded successfully'),
-        }
-      );
+      startLoading();
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await stopLoading();
+      showSuccess('Operation completed', 'Data loaded successfully');
     } catch (error) {
+      await stopLoading();
       showError('Operation failed', 'Something went wrong');
     }
   };
 
-  const simulateError = () => {
-    loadingActions.executeWithLoading(
-      () => Promise.reject(new Error('Simulated error'))
-    );
+  const simulateError = async () => {
+    try {
+      startLoading();
+      await Promise.reject(new Error('Simulated error'));
+    } catch (error) {
+      await stopLoading();
+      showError('Operation failed', 'Simulated error occurred');
+    }
   };
 
   return (
@@ -208,44 +209,35 @@ export const LoadingExamples: React.FC = () => {
           <h3 className="text-lg font-medium mb-4">useLoadingState Hook</h3>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="font-medium">Loading:</span> {loadingState.isLoading ? 'Yes' : 'No'}
+                <span className="font-medium">Loading:</span> {isLoading ? 'Yes' : 'No'}
               </div>
               <div>
-                <span className="font-medium">Progress:</span> {loadingState.progress}%
+                <span className="font-medium">Elapsed:</span> {Math.round(elapsedTime / 1000)}s
               </div>
               <div>
-                <span className="font-medium">Elapsed:</span> {Math.round(loadingState.elapsedTime / 1000)}s
-              </div>
-              <div>
-                <span className="font-medium">Timed Out:</span> {loadingState.hasTimedOut ? 'Yes' : 'No'}
+                <span className="font-medium">Progress:</span> {progress}%
               </div>
             </div>
-            
-            {loadingState.error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-800 text-sm">Error: {loadingState.error.message}</p>
-              </div>
-            )}
             
             <div className="flex space-x-4">
               <button
                 onClick={simulateAsyncOperation}
-                disabled={loadingState.isLoading}
+                disabled={isLoading}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
               >
                 Simulate Success
               </button>
               <button
                 onClick={simulateError}
-                disabled={loadingState.isLoading}
+                disabled={isLoading}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
               >
                 Simulate Error
               </button>
               <button
-                onClick={loadingActions.reset}
+                onClick={resetLoading}
                 className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
               >
                 Reset

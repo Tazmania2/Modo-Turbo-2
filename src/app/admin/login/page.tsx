@@ -4,6 +4,8 @@ import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
 
+export const dynamic = 'force-dynamic';
+
 function AdminLoginContent() {
   const searchParams = useSearchParams();
   const instanceId = searchParams.get('instance');

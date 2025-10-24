@@ -23,7 +23,7 @@ export const LoadingShowcase: React.FC = () => {
   const [showSkeletons, setShowSkeletons] = useState(false);
   const [skeletonType, setSkeletonType] = useState<'dashboard' | 'ranking' | 'history'>('dashboard');
   const { showSuccess, showError, showWarning, showInfo } = useToast();
-  const [loadingState, loadingActions] = useLoadingState();
+  const loadingState = useLoadingState();
 
   // Simulate progress
   const simulateProgress = () => {
@@ -43,31 +43,24 @@ export const LoadingShowcase: React.FC = () => {
   // Simulate data fetching
   const simulateDataFetching = async () => {
     try {
-      await loadingActions.executeWithLoading(
-        () => new Promise(resolve => setTimeout(resolve, 3000)),
-        {
-          timeout: 5000,
-          onTimeout: () => showWarning('Taking longer than expected', 'Please wait a bit more...'),
-          onSuccess: () => showSuccess('Data loaded successfully!'),
-          onError: (error) => showError('Failed to load data', error.message),
-        }
-      );
+      loadingState.startLoading();
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      await loadingState.stopLoading();
+      showSuccess('Data loaded successfully!');
     } catch (error) {
-      // Error already handled by the hook
+      await loadingState.stopLoading();
+      showError('Failed to load data', 'An error occurred');
     }
   };
 
   // Simulate error
   const simulateError = async () => {
     try {
-      await loadingActions.executeWithLoading(
-        () => Promise.reject(new Error('Simulated network error')),
-        {
-          onError: (error) => showError('Operation Failed', error.message),
-        }
-      );
+      loadingState.startLoading();
+      await Promise.reject(new Error('Simulated network error'));
     } catch (error) {
-      // Error already handled
+      await loadingState.stopLoading();
+      showError('Operation Failed', 'Simulated network error');
     }
   };
 
@@ -187,12 +180,7 @@ export const LoadingShowcase: React.FC = () => {
             />
           )}
 
-          {loadingState.error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 font-medium">Error occurred:</p>
-              <p className="text-red-700">{loadingState.error.message}</p>
-            </div>
-          )}
+
         </div>
       </section>
 
@@ -243,7 +231,7 @@ export const LoadingShowcase: React.FC = () => {
           isLoading={loadingState.isLoading}
           loadingType="overlay"
           loadingText="Processing your request..."
-          errorMessage={loadingState.error?.message}
+          errorMessage={undefined}
         >
           <div className="p-8 bg-gray-50 rounded-lg text-center">
             <h3 className="text-lg font-medium mb-2">Content Area</h3>
@@ -265,22 +253,10 @@ export const LoadingShowcase: React.FC = () => {
             <div className="text-sm text-gray-600">Elapsed Time</div>
           </div>
           <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className="text-2xl font-bold text-primary-600">
-              {Math.round(loadingState.progress)}%
-            </div>
-            <div className="text-sm text-gray-600">Progress</div>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
             <div className={`text-2xl font-bold ${loadingState.isLoading ? 'text-yellow-600' : 'text-green-600'}`}>
               {loadingState.isLoading ? 'Active' : 'Idle'}
             </div>
             <div className="text-sm text-gray-600">Status</div>
-          </div>
-          <div className="text-center p-4 bg-gray-50 rounded-lg">
-            <div className={`text-2xl font-bold ${loadingState.hasTimedOut ? 'text-red-600' : 'text-gray-400'}`}>
-              {loadingState.hasTimedOut ? 'Yes' : 'No'}
-            </div>
-            <div className="text-sm text-gray-600">Timed Out</div>
           </div>
         </div>
       </section>

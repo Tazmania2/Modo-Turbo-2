@@ -1,6 +1,8 @@
 'use client';
 
 import { Suspense } from 'react';
+
+export const dynamic = 'force-dynamic';
 import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DashboardContainer } from '@/components/dashboard/DashboardContainer';

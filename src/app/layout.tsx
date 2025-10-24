@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+'use client';
+
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { DemoModeIndicator } from "@/components/common/DemoModeIndicator";
@@ -14,11 +15,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "White-Label Gamification Platform",
-  description: "Customizable gamification platform powered by Funifier",
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,8 +25,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <DemoModeIndicator />
         <AuthProvider>
+          <DemoModeIndicator />
           {children}
         </AuthProvider>
       </body>

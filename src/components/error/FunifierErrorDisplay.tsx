@@ -207,7 +207,7 @@ export function FunifierErrorDisplay({
             </div>
           )}
 
-          {showTechnicalDetails && error.details && (
+          {showTechnicalDetails && error.details !== undefined && (
             <div className="mt-4">
               <button
                 onClick={() => setShowDetails(!showDetails)}

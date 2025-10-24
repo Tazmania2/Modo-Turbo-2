@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+
+export const dynamic = 'force-dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SetupWizard } from '@/components/setup/SetupWizard';
 import { SetupRequest } from '@/types/funifier';

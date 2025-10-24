@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+
+export const dynamic = 'force-dynamic';
 import { useAuth } from '../../hooks/useAuth';
 import { HistoryContainer } from '../../components/history/HistoryContainer';
 

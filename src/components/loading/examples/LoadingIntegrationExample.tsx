@@ -15,12 +15,12 @@ export const LoadingIntegrationExample: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToast();
   
   // Separate loading states for different operations
-  const [dashboardLoading, dashboardActions] = useLoadingState({
+  const dashboardLoading = useLoadingState({
     timeout: 5000,
     onTimeout: () => showWarning('Dashboard loading timeout', 'This is taking longer than expected'),
   });
   
-  const [rankingLoading, rankingActions] = useLoadingState({
+  const rankingLoading = useLoadingState({
     timeout: 5000,
     onTimeout: () => showWarning('Ranking loading timeout', 'This is taking longer than expected'),
   });
@@ -28,38 +28,31 @@ export const LoadingIntegrationExample: React.FC = () => {
   // Simulate dashboard data fetching
   const fetchDashboardData = async () => {
     try {
-      const data = await dashboardActions.executeWithLoading(async () => {
-        // Simulate API call with progress updates
-        dashboardActions.setProgress(20);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        dashboardActions.setProgress(50);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        dashboardActions.setProgress(80);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        dashboardActions.setProgress(100);
-        
-        // Simulate potential error (20% chance)
-        if (Math.random() < 0.2) {
-          throw new Error('Failed to fetch dashboard data from Funifier API');
-        }
-        
-        return {
-          playerName: 'John Doe',
-          totalPoints: 1250,
-          goals: [
-            { name: 'Daily Tasks', percentage: 75, emoji: '📋' },
-            { name: 'Team Collaboration', percentage: 60, emoji: '🤝' },
-            { name: 'Learning Goals', percentage: 90, emoji: '📚' },
-          ],
-        };
-      });
+      dashboardLoading.startLoading();
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate potential error (20% chance)
+      if (Math.random() < 0.2) {
+        throw new Error('Failed to fetch dashboard data from Funifier API');
+      }
+      
+      const data = {
+        playerName: 'John Doe',
+        totalPoints: 1250,
+        goals: [
+          { name: 'Daily Tasks', percentage: 75, emoji: '📋' },
+          { name: 'Team Collaboration', percentage: 60, emoji: '🤝' },
+          { name: 'Learning Goals', percentage: 90, emoji: '📚' },
+        ],
+      };
       
       setDashboardData(data);
+      await dashboardLoading.stopLoading();
       showSuccess('Dashboard loaded', 'Your personal dashboard has been updated');
     } catch (error) {
+      await dashboardLoading.stopLoading();
       showError('Dashboard error', 'Failed to load dashboard data. Please try again.');
     }
   };
@@ -67,46 +60,36 @@ export const LoadingIntegrationExample: React.FC = () => {
   // Simulate ranking data fetching
   const fetchRankingData = async () => {
     try {
-      const data = await rankingActions.executeWithLoading(async () => {
-        // Simulate longer loading for ranking data
-        rankingActions.setProgress(10);
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        rankingActions.setProgress(30);
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        rankingActions.setProgress(60);
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        rankingActions.setProgress(90);
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        rankingActions.setProgress(100);
-        
-        // Simulate potential error (15% chance)
-        if (Math.random() < 0.15) {
-          throw new Error('Ranking service temporarily unavailable');
-        }
-        
-        return {
-          currentPosition: 5,
-          totalPlayers: 42,
-          topThree: [
-            { name: 'Alice Smith', points: 2100 },
-            { name: 'Bob Johnson', points: 1950 },
-            { name: 'Carol Davis', points: 1800 },
-          ],
-          userContext: {
-            above: { name: 'David Wilson', points: 1300 },
-            current: { name: 'John Doe', points: 1250 },
-            below: { name: 'Emma Brown', points: 1200 },
-          },
-        };
-      });
+      rankingLoading.startLoading();
+      
+      // Simulate longer loading for ranking data
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Simulate potential error (15% chance)
+      if (Math.random() < 0.15) {
+        throw new Error('Ranking service temporarily unavailable');
+      }
+      
+      const data = {
+        currentPosition: 5,
+        totalPlayers: 42,
+        topThree: [
+          { name: 'Alice Smith', points: 2100 },
+          { name: 'Bob Johnson', points: 1950 },
+          { name: 'Carol Davis', points: 1800 },
+        ],
+        userContext: {
+          above: { name: 'David Wilson', points: 1300 },
+          current: { name: 'John Doe', points: 1250 },
+          below: { name: 'Emma Brown', points: 1200 },
+        },
+      };
       
       setRankingData(data);
+      await rankingLoading.stopLoading();
       showSuccess('Ranking updated', 'Latest ranking data has been loaded');
     } catch (error) {
+      await rankingLoading.stopLoading();
       showError('Ranking error', 'Failed to load ranking data. Please try again.');
     }
   };
@@ -175,7 +158,7 @@ export const LoadingIntegrationExample: React.FC = () => {
           isLoading={dashboardLoading.isLoading}
           loadingType="skeleton"
           skeletonType="dashboard"
-          errorMessage={dashboardLoading.error?.message}
+          errorMessage={undefined}
         >
           {dashboardData ? (
             <div className="p-6">
@@ -220,7 +203,7 @@ export const LoadingIntegrationExample: React.FC = () => {
           isLoading={rankingLoading.isLoading}
           loadingType="skeleton"
           skeletonType="ranking"
-          errorMessage={rankingLoading.error?.message}
+          errorMessage={undefined}
         >
           {rankingData ? (
             <div className="p-6">
@@ -290,18 +273,9 @@ export const LoadingIntegrationExample: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Progress:</span>
-                <span>{Math.round(dashboardLoading.progress)}%</span>
-              </div>
-              <div className="flex justify-between">
                 <span>Elapsed:</span>
-                <span>{dashboardLoading.elapsedTime}ms</span>
+                <span>{Math.round(dashboardLoading.elapsedTime / 1000)}s</span>
               </div>
-              {dashboardLoading.error && (
-                <div className="text-red-600">
-                  Error: {dashboardLoading.error.message}
-                </div>
-              )}
             </div>
           </div>
           
@@ -315,18 +289,9 @@ export const LoadingIntegrationExample: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Progress:</span>
-                <span>{Math.round(rankingLoading.progress)}%</span>
-              </div>
-              <div className="flex justify-between">
                 <span>Elapsed:</span>
-                <span>{rankingLoading.elapsedTime}ms</span>
+                <span>{Math.round(rankingLoading.elapsedTime / 1000)}s</span>
               </div>
-              {rankingLoading.error && (
-                <div className="text-red-600">
-                  Error: {rankingLoading.error.message}
-                </div>
-              )}
             </div>
           </div>
         </div>

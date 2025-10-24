@@ -1,6 +1,8 @@
 'use client';
 
 import { useAuthContext } from '@/contexts/AuthContext';
+
+export const dynamic = 'force-dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { FeatureTogglePanel } from '@/components/admin/FeatureTogglePanel';
