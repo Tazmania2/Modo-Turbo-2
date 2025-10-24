@@ -570,9 +570,7 @@ export class KnowledgeBaseService {
     return suggestion;
   }
 
-  // Private helper methods continue in next part...
-} 
- // Private helper methods
+  // Private helper methods
 
   private initializeSearchIndex(): void {
     // Initialize search index structures
@@ -1047,11 +1045,17 @@ export class KnowledgeBaseService {
     importance += Math.log(entry.viewCount + 1) / 10 * 0.2;
 
     // Boost for certain types
-    const typeBoosts = {
+    const typeBoosts: Partial<Record<KnowledgeEntryType, number>> = {
       'best-practice': 0.3,
       'troubleshooting': 0.2,
       'integration-guide': 0.25,
-      'analysis-result': 0.15
+      'analysis-result': 0.15,
+      'lesson-learned': 0.2,
+      'faq': 0.15,
+      'tutorial': 0.25,
+      'reference': 0.1,
+      'case-study': 0.2,
+      'template': 0.15
     };
     importance += typeBoosts[entry.type] || 0.1;
 

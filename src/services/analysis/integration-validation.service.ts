@@ -763,7 +763,7 @@ export class IntegrationValidationService {
       if (impact.loadTime.changePercent > 10) {
         issues.push({
           type: 'performance_regression',
-          severity: 'high',
+          severity: 'error',
           message: `Load time increased by ${impact.loadTime.changePercent}%`
         });
         score -= 20;
@@ -772,7 +772,7 @@ export class IntegrationValidationService {
       if (impact.bundleSize.changePercent > 15) {
         issues.push({
           type: 'bundle_size',
-          severity: 'medium',
+          severity: 'warning',
           message: `Bundle size increased by ${impact.bundleSize.changePercent}%`
         });
         score -= 10;

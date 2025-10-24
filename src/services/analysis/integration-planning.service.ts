@@ -627,8 +627,8 @@ export class IntegrationPlanningService {
   }
 
   private requiresConfiguration(feature: PrioritizedFeature): boolean {
-    return feature.category === 'admin' || 
-           feature.category === 'integration' ||
+    return feature.category === 'monitoring' || 
+           feature.category === 'compatibility' ||
            feature.files.some(file => file.includes('config'));
   }
 

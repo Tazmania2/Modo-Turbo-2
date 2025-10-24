@@ -6,11 +6,11 @@ import {
   SecurityResult
 } from './comprehensive-testing.service';
 import { 
-  ValidationExecution,
-  ValidationResult
+  ValidationExecution
 } from './integration-validation.service';
 import { 
-  IntegrationResult
+  IntegrationResult,
+  ValidationResult
 } from './feature-integration.service';
 import { 
   PrioritizedFeature 
@@ -901,7 +901,7 @@ export class ValidationReportingService {
       execution.artifacts.forEach(artifact => {
         artifacts.push({
           id: artifact.name,
-          type: artifact.type,
+          type: this.mapArtifactType(artifact.type),
           name: artifact.name,
           description: `Test artifact from ${execution.suiteId}`,
           path: artifact.path,
@@ -1115,6 +1115,24 @@ export class ValidationReportingService {
   private exportToExcel(report: ValidationReport): string {
     // Implementation would export to Excel
     return 'Excel content';
+  }
+
+  private mapArtifactType(type: string): 'screenshot' | 'video' | 'log' | 'data' | 'chart' | 'document' {
+    switch (type) {
+      case 'coverage':
+        return 'data';
+      case 'report':
+        return 'document';
+      case 'screenshot':
+      case 'video':
+      case 'log':
+      case 'data':
+      case 'chart':
+      case 'document':
+        return type as 'screenshot' | 'video' | 'log' | 'data' | 'chart' | 'document';
+      default:
+        return 'document';
+    }
   }
 }
 

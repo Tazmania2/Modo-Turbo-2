@@ -1,10 +1,9 @@
 import { 
-  Feature, 
-  SecurityIssue, 
-  SecurityVulnerability,
-  SecurityAnalysis,
-  CodeChange
+  SecurityIssue,
+  SecurityAnalysis
 } from '@/types/analysis.types';
+import { SecurityVulnerability } from './system-validation.service';
+import { Feature } from './feature-identification.service';
 import { securityValidationTestService } from './security-validation-test.service';
 import { vulnerabilityScanningAutomationService } from './vulnerability-scanning-automation.service';
 
@@ -136,11 +135,11 @@ export class SecurityRegressionTestService {
         totalVulnerabilities += validationResult.vulnerabilities.length;
 
         // Count issues by severity
-        validationResult.vulnerabilities.forEach(vuln => {
+        validationResult.vulnerabilities.forEach((vuln: SecurityVulnerability) => {
           switch (vuln.severity) {
             case 'critical': criticalIssues++; break;
             case 'high': highIssues++; break;
-            case 'moderate': mediumIssues++; break;
+            case 'medium': mediumIssues++; break;
             case 'low': lowIssues++; break;
           }
         });
@@ -205,7 +204,7 @@ export class SecurityRegressionTestService {
       this.baselines.set(id, baseline);
       return baseline;
     } catch (error) {
-      throw new Error(`Failed to create security baseline: ${error.message}`);
+      throw new Error(`Failed to create security baseline: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -330,7 +329,7 @@ export class SecurityRegressionTestService {
 
       return report;
     } catch (error) {
-      throw new Error(`Security regression test failed: ${error.message}`);
+      throw new Error(`Security regression test failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -440,7 +439,7 @@ export class SecurityRegressionTestService {
         switch (vuln.severity) {
           case 'critical': score -= 25; break;
           case 'high': score -= 15; break;
-          case 'moderate': score -= 8; break;
+          case 'medium': score -= 8; break;
           case 'low': score -= 3; break;
         }
       });
@@ -464,8 +463,8 @@ export class SecurityRegressionTestService {
   private convertVulnerabilitiesToIssues(vulnerabilities: SecurityVulnerability[]): SecurityIssue[] {
     return vulnerabilities.map(vuln => ({
       type: 'vulnerability',
-      severity: vuln.severity === 'moderate' ? 'medium' : vuln.severity as 'low' | 'medium' | 'high' | 'critical',
-      file: vuln.package || 'unknown',
+      severity: vuln.severity === 'medium' ? 'medium' : vuln.severity as 'low' | 'medium' | 'high' | 'critical',
+      file: vuln.location || 'unknown',
       line: 0,
       description: vuln.description,
       recommendation: vuln.recommendation

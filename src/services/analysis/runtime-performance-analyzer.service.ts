@@ -451,3 +451,5 @@ export class RuntimePerformanceAnalyzer {
     this.baselines.set('system', defaultBaseline);
   }
 }
+
+export const runtimePerformanceAnalyzerService = new RuntimePerformanceAnalyzer();

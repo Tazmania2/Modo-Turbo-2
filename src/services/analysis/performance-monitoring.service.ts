@@ -66,30 +66,19 @@ export class PerformanceMonitoringService {
       const bundleAnalysis = await bundleSizeAnalyzerService.analyzeBundleSize(projectPath);
       
       // Collect runtime performance metrics
-      const runtimeAnalysis = await runtimePerformanceAnalyzerService.analyzeRuntimePerformance(
-        projectPath,
-        {
-          duration: 10,
-          sampleRate: 1,
-          includeMemory: true,
-          includeCpu: true,
-          includeNetwork: false,
-          includeRendering: true,
-          components: []
-        }
-      );
+      const runtimeAnalysis = await runtimePerformanceAnalyzerService.getCurrentMetrics();
 
       return {
         timestamp: Date.now(),
         bundleSize: bundleAnalysis.totalSize,
         loadTime: this.estimateLoadTime(bundleAnalysis.totalSize),
-        renderTime: this.estimateRenderTime(runtimeAnalysis.renderingPerformance.frameRate),
-        memoryUsage: runtimeAnalysis.memoryUsage.totalMemory,
-        cpuUsage: runtimeAnalysis.cpuUsage.averageUsage
+        renderTime: runtimeAnalysis.responseTime.average,
+        memoryUsage: runtimeAnalysis.memoryUsage.used,
+        cpuUsage: runtimeAnalysis.cpuUsage.overall
       };
     } catch (error) {
       console.error('Failed to collect performance metrics:', error);
-      throw new Error(`Performance metrics collection failed: ${error.message}`);
+      throw new Error(`Performance metrics collection failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -164,7 +153,7 @@ export class PerformanceMonitoringService {
       };
     } catch (error) {
       console.error('Failed to generate performance report:', error);
-      throw new Error(`Performance report generation failed: ${error.message}`);
+      throw new Error(`Performance report generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
