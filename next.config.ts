@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // Disable static page generation to avoid SSR issues with AuthProvider
+  output: 'standalone',
 };
 
 export default nextConfig;

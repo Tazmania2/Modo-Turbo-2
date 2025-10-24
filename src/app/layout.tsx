@@ -1,8 +1,5 @@
-'use client';
-
 import { Geist, Geist_Mono } from "next/font/google";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { DemoModeIndicator } from "@/components/common/DemoModeIndicator";
+import { ClientProviders } from "@/components/providers/ClientProviders";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,10 +22,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <DemoModeIndicator />
+        <ClientProviders>
           {children}
-        </AuthProvider>
+        </ClientProviders>
       </body>
     </html>
   );

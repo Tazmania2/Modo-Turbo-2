@@ -33,6 +33,22 @@ export function useAuthContext(): UseAuthReturn {
   const context = useContext(AuthContext);
   
   if (context === undefined) {
+    // During SSR or before mount, return a default unauthenticated state
+    // This prevents build errors while maintaining type safety
+    if (typeof window === 'undefined') {
+      return {
+        user: null,
+        isAuthenticated: false,
+        isLoading: true,
+        isAdmin: false,
+        roles: [],
+        login: async () => {},
+        logout: async () => {},
+        refreshToken: async () => {},
+        verifyAdmin: async () => false,
+        checkAuth: async () => {},
+      };
+    }
     throw new Error('useAuthContext must be used within an AuthProvider');
   }
   
