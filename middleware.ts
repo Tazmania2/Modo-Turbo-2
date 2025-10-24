@@ -1,10 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Next.js middleware for global request handling
+ * Routes that require authentication
+ */
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/ranking',
+  '/admin',
+  '/profile',
+];
+
+/**
+ * Routes that require admin role
+ */
+const ADMIN_ROUTES = [
+  '/admin',
+];
+
+/**
+ * Public routes that don't require authentication
+ */
+const PUBLIC_ROUTES = [
+  '/',
+  '/login',
+  '/setup',
+  '/api/demo-data',
+  '/api/setup',
+];
+
+/**
+ * Check if a path matches any of the route patterns
+ */
+function matchesRoute(pathname: string, routes: string[]): boolean {
+  return routes.some(route => {
+    if (route.endsWith('*')) {
+      return pathname.startsWith(route.slice(0, -1));
+    }
+    return pathname === route || pathname.startsWith(`${route}/`);
+  });
+}
+
+/**
+ * Get authentication token from request
+ */
+function getAuthToken(request: NextRequest): string | null {
+  // Check Authorization header
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  // Check cookies
+  const tokenCookie = request.cookies.get('funifier_token');
+  if (tokenCookie) {
+    return tokenCookie.value;
+  }
+
+  return null;
+}
+
+/**
+ * Verify token validity (basic check - full verification happens in API routes)
+ */
+function isTokenValid(token: string | null): boolean {
+  if (!token) {
+    return false;
+  }
+
+  try {
+    // Basic JWT structure check
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return false;
+    }
+
+    // Decode payload to check expiration
+    const payload = JSON.parse(atob(parts[1]));
+    const exp = payload.exp;
+    
+    if (!exp) {
+      return true; // No expiration set
+    }
+
+    // Check if token is expired (with 5 minute buffer)
+    const now = Math.floor(Date.now() / 1000);
+    return exp > now + 300;
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return false;
+  }
+}
+
+/**
+ * Next.js middleware for authentication and request handling
  * This runs before API routes and page requests
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for static files and Next.js internals
@@ -17,7 +108,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Add security headers to all responses
+  // Create response with security headers
   const response = NextResponse.next();
   
   // Security headers
@@ -57,11 +148,58 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect setup flow logic
-  if (pathname === '/' || pathname === '/dashboard' || pathname === '/ranking') {
-    // In a real implementation, you would check if setup is complete
-    // For now, we'll allow all requests to proceed
+  // Skip authentication check for public routes
+  if (matchesRoute(pathname, PUBLIC_ROUTES)) {
     return response;
+  }
+
+  // Check authentication for protected routes
+  if (matchesRoute(pathname, PROTECTED_ROUTES)) {
+    const token = getAuthToken(request);
+    const hasValidToken = isTokenValid(token);
+
+    // If user is authenticated, allow access to all protected routes
+    // This removes authentication barriers for authenticated users
+    if (hasValidToken) {
+      // For admin routes, add a header to indicate admin check is needed
+      // The actual admin verification will happen in the page component
+      if (matchesRoute(pathname, ADMIN_ROUTES)) {
+        response.headers.set('X-Require-Admin', 'true');
+      }
+      
+      // Add authentication status header
+      response.headers.set('X-Authenticated', 'true');
+      
+      // Preserve the intended destination for deep linking
+      return response;
+    }
+
+    // User is not authenticated
+    // Check if demo mode is enabled
+    const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE_ENABLED === 'true';
+    
+    if (!isDemoMode) {
+      // Redirect to login for non-API routes with deep linking support
+      if (!pathname.startsWith('/api/')) {
+        const loginUrl = new URL('/admin/login', request.url);
+        // Preserve the intended destination for deep linking
+        loginUrl.searchParams.set('redirect', pathname);
+        // Preserve query parameters
+        request.nextUrl.searchParams.forEach((value, key) => {
+          loginUrl.searchParams.set(key, value);
+        });
+        return NextResponse.redirect(loginUrl);
+      }
+      
+      // Return 401 for API routes
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Demo mode is enabled, allow access
+    response.headers.set('X-Demo-Mode', 'true');
   }
 
   return response;

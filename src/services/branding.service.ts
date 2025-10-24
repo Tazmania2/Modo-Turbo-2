@@ -2,6 +2,9 @@ import { WhiteLabelBranding } from '@/types/funifier';
 import { whiteLabelConfigService } from './white-label-config.service';
 import { brandingDatabaseService } from './branding-database.service';
 import { validateBrandingConfiguration } from '@/utils/validation';
+import { getFunifierDirectService } from './funifier-direct.service';
+import { WhiteLabelConfig } from '@/types/funifier-api-responses';
+import { demoModeService } from './demo-mode.service';
 
 export interface BrandingUpdateResult {
   success: boolean;
@@ -44,19 +47,83 @@ export class BrandingService {
 
   /**
    * Get current branding configuration for an instance
+   * Uses direct Funifier API integration or demo data based on mode
    */
   async getBranding(instanceId: string): Promise<WhiteLabelBranding | null> {
     try {
-      const config = await whiteLabelConfigService.getConfiguration(instanceId);
-      return config?.branding || null;
+      // Check if we're in demo mode
+      const isDemoMode = demoModeService.isDemoMode();
+      
+      if (isDemoMode) {
+        // Return demo branding configuration
+        console.log('[BrandingService] Using demo branding configuration');
+        const demoBranding: WhiteLabelBranding = {
+          primaryColor: '#3B82F6',
+          secondaryColor: '#10B981',
+          accentColor: '#F59E0B',
+          logo: 'https://via.placeholder.com/200x80?text=Demo+Company',
+          favicon: 'https://via.placeholder.com/32x32?text=D',
+          companyName: 'Demo Company',
+          tagline: 'Your Gamification Partner'
+        };
+        
+        // Validate data source
+        demoModeService.validateDataSource(demoBranding, 'demo');
+        return demoBranding;
+      }
+      
+      // Production mode - use direct Funifier API
+      console.log('[BrandingService] Using Funifier API for branding');
+      const funifierService = getFunifierDirectService();
+      funifierService.setInstanceId(instanceId);
+      
+      const config = await funifierService.getWhiteLabelConfig();
+      if (!config?.branding) return null;
+      
+      // Convert BrandingConfig to WhiteLabelBranding
+      const branding = {
+        primaryColor: config.branding.primaryColor,
+        secondaryColor: config.branding.secondaryColor,
+        accentColor: config.branding.accentColor,
+        logo: config.branding.logo,
+        favicon: config.branding.favicon || '',
+        companyName: config.branding.companyName,
+        tagline: config.branding.tagline || ''
+      };
+      
+      // Validate data source
+      demoModeService.validateDataSource(branding, 'funifier');
+      return branding;
     } catch (error) {
       console.error('Failed to get branding configuration:', error);
-      return null;
+      
+      // In demo mode, return demo data on error
+      if (demoModeService.isDemoMode()) {
+        return {
+          primaryColor: '#3B82F6',
+          secondaryColor: '#10B981',
+          accentColor: '#F59E0B',
+          logo: 'https://via.placeholder.com/200x80?text=Demo+Company',
+          favicon: 'https://via.placeholder.com/32x32?text=D',
+          companyName: 'Demo Company',
+          tagline: 'Your Gamification Partner'
+        };
+      }
+      
+      // Fallback to local service in production
+      try {
+        const config = await whiteLabelConfigService.getConfiguration(instanceId);
+        return config?.branding || null;
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        return null;
+      }
     }
   }
 
   /**
    * Update branding configuration
+   * Uses direct Funifier API integration to persist to white_label__c collection
    */
   async updateBranding(
     instanceId: string,
@@ -64,8 +131,12 @@ export class BrandingService {
     userId: string
   ): Promise<BrandingUpdateResult> {
     try {
-      // Get current configuration
-      const currentConfig = await whiteLabelConfigService.getConfiguration(instanceId);
+      // Use direct Funifier API
+      const funifierService = getFunifierDirectService();
+      funifierService.setInstanceId(instanceId);
+      
+      // Get current configuration from Funifier
+      const currentConfig = await funifierService.getWhiteLabelConfig();
       if (!currentConfig) {
         return {
           success: false,
@@ -75,7 +146,13 @@ export class BrandingService {
 
       // Merge with existing branding
       const updatedBranding: WhiteLabelBranding = {
-        ...currentConfig.branding,
+        primaryColor: currentConfig.branding.primaryColor,
+        secondaryColor: currentConfig.branding.secondaryColor,
+        accentColor: currentConfig.branding.accentColor,
+        logo: currentConfig.branding.logo,
+        favicon: currentConfig.branding.favicon || '',
+        companyName: currentConfig.branding.companyName,
+        tagline: currentConfig.branding.tagline || '',
         ...branding
       };
 
@@ -89,36 +166,86 @@ export class BrandingService {
         };
       }
 
-      // Update configuration
-      const updatedConfig = {
+      // Update configuration in Funifier
+      const updatedConfig: WhiteLabelConfig = {
         ...currentConfig,
-        branding: updatedBranding,
+        branding: {
+          logo: updatedBranding.logo,
+          favicon: updatedBranding.favicon,
+          primaryColor: updatedBranding.primaryColor,
+          secondaryColor: updatedBranding.secondaryColor,
+          accentColor: updatedBranding.accentColor,
+          companyName: updatedBranding.companyName,
+          tagline: updatedBranding.tagline
+        },
         updatedAt: Date.now()
       };
 
-      const saveResult = await whiteLabelConfigService.saveConfiguration(
-        instanceId,
-        updatedConfig,
-        userId
-      );
+      // Save directly to Funifier white_label__c collection
+      await funifierService.saveWhiteLabelConfig(updatedConfig);
 
-      if (saveResult.success) {
-        return {
-          success: true,
-          branding: updatedBranding,
-          warnings: validation.warnings
+      return {
+        success: true,
+        branding: updatedBranding,
+        warnings: validation.warnings
+      };
+    } catch (error) {
+      console.error('Failed to update branding via Funifier:', error);
+      
+      // Fallback to local service
+      try {
+        const currentConfig = await whiteLabelConfigService.getConfiguration(instanceId);
+        if (!currentConfig) {
+          return {
+            success: false,
+            errors: ['Configuration not found for instance']
+          };
+        }
+
+        const updatedBranding: WhiteLabelBranding = {
+          ...currentConfig.branding,
+          ...branding
         };
-      } else {
+
+        const validation = validateBrandingConfiguration(updatedBranding);
+        if (!validation.isValid) {
+          return {
+            success: false,
+            errors: validation.errors,
+            warnings: validation.warnings
+          };
+        }
+
+        const updatedConfig = {
+          ...currentConfig,
+          branding: updatedBranding,
+          updatedAt: Date.now()
+        };
+
+        const saveResult = await whiteLabelConfigService.saveConfiguration(
+          instanceId,
+          updatedConfig,
+          userId
+        );
+
+        if (saveResult.success) {
+          return {
+            success: true,
+            branding: updatedBranding,
+            warnings: validation.warnings
+          };
+        } else {
+          return {
+            success: false,
+            errors: saveResult.errors
+          };
+        }
+      } catch (fallbackError) {
         return {
           success: false,
-          errors: saveResult.errors
+          errors: [`Failed to update branding: ${error instanceof Error ? error.message : 'Unknown error'}`]
         };
       }
-    } catch (error) {
-      return {
-        success: false,
-        errors: [`Failed to update branding: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      };
     }
   }
 

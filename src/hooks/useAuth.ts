@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FunifierPlayerStatus } from '@/types/funifier';
 import { setDemoMode } from '@/utils/demo';
+import { getFunifierDirectService } from '@/services/funifier-direct.service';
+import { UserProfile } from '@/types/funifier-api-responses';
 
 export interface AuthState {
   user: FunifierPlayerStatus | null;
@@ -23,6 +25,15 @@ export interface UseAuthReturn extends AuthState {
   checkAuth: () => Promise<void>;
 }
 
+/**
+ * Convert UserProfile from Funifier API to FunifierPlayerStatus
+ * Since UserProfile is already FunifierPlayerStatus, this is a pass-through
+ */
+function convertUserProfileToPlayerStatus(profile: UserProfile): FunifierPlayerStatus {
+  // UserProfile is already FunifierPlayerStatus, just return it
+  return profile;
+}
+
 export function useAuth(): UseAuthReturn {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -33,29 +44,16 @@ export function useAuth(): UseAuthReturn {
   });
 
   /**
-   * Check current authentication status
+   * Check current authentication status using direct Funifier integration
    */
   const checkAuth = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
       
-      // Try to verify admin role (this will also validate authentication)
-      const adminResponse = await fetch('/api/auth/verify-admin', {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (adminResponse.ok) {
-        const adminData = await adminResponse.json();
-        
-        setState({
-          user: adminData.playerData,
-          isAuthenticated: true,
-          isLoading: false,
-          isAdmin: adminData.isAdmin,
-          roles: adminData.roles,
-        });
-      } else {
+      const funifierService = getFunifierDirectService();
+      
+      // Check if user is authenticated via token storage
+      if (!funifierService.isAuthenticated()) {
         // Check if we're in demo mode
         const demoResponse = await fetch('/api/demo-data', {
           method: 'GET',
@@ -105,7 +103,28 @@ export function useAuth(): UseAuthReturn {
             roles: [],
           });
         }
+        return;
       }
+
+      // Get user profile directly from Funifier
+      const userId = funifierService.getUserId();
+      if (!userId) {
+        throw new Error('User ID not found in token storage');
+      }
+
+      const userProfile = await funifierService.getUserProfile(userId);
+      const playerStatus = convertUserProfileToPlayerStatus(userProfile);
+
+      // Verify admin role directly with Funifier
+      const adminVerification = await funifierService.verifyAdminRole(userId);
+
+      setState({
+        user: playerStatus,
+        isAuthenticated: true,
+        isLoading: false,
+        isAdmin: adminVerification.isAdmin,
+        roles: adminVerification.roles || [],
+      });
     } catch (error) {
       console.error('Auth check failed:', error);
       
@@ -139,6 +158,8 @@ export function useAuth(): UseAuthReturn {
             pointCategories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 }
           };
 
+          setDemoMode(true);
+
           setState({
             user: demoUser,
             isAuthenticated: true,
@@ -168,48 +189,66 @@ export function useAuth(): UseAuthReturn {
   }, []);
 
   /**
-   * Login with credentials
+   * Login with credentials using direct Funifier authentication
    */
   const login = useCallback(async (credentials: LoginCredentials, instanceId?: string | null) => {
     try {
       setState(prev => ({ ...prev, isLoading: true }));
 
-      // Build URL with instance parameter if provided
-      const url = instanceId 
-        ? `/api/auth/login?instance=${encodeURIComponent(instanceId)}`
-        : '/api/auth/login';
-
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(credentials),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Login failed');
+      const funifierService = getFunifierDirectService();
+      
+      // Set instance ID if provided
+      if (instanceId) {
+        funifierService.setInstanceId(instanceId);
       }
 
-      // Refresh auth state after successful login
-      await checkAuth();
+      // Authenticate directly with Funifier
+      const authResult = await funifierService.authenticateUser(credentials);
+
+      if (!authResult.success) {
+        throw new Error(authResult.error || 'Login failed');
+      }
+
+      // Convert user profile to player status
+      const playerStatus = authResult.user 
+        ? convertUserProfileToPlayerStatus(authResult.user)
+        : null;
+
+      // Verify admin role
+      let isAdmin = false;
+      let roles: string[] = [];
+      
+      if (authResult.user) {
+        try {
+          const adminVerification = await funifierService.verifyAdminRole(authResult.user._id);
+          isAdmin = adminVerification.isAdmin;
+          roles = adminVerification.roles || [];
+        } catch (error) {
+          console.warn('Admin verification failed:', error);
+          // Continue without admin privileges
+        }
+      }
+
+      setState({
+        user: playerStatus,
+        isAuthenticated: true,
+        isLoading: false,
+        isAdmin,
+        roles,
+      });
     } catch (error) {
       setState(prev => ({ ...prev, isLoading: false }));
       throw error;
     }
-  }, [checkAuth]);
+  }, []);
 
   /**
-   * Logout user
+   * Logout user using direct Funifier service
    */
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const funifierService = getFunifierDirectService();
+      await funifierService.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -224,18 +263,12 @@ export function useAuth(): UseAuthReturn {
   }, []);
 
   /**
-   * Refresh authentication token
+   * Refresh authentication token using direct Funifier service
    */
   const refreshToken = useCallback(async () => {
     try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Token refresh failed');
-      }
+      const funifierService = getFunifierDirectService();
+      await funifierService.refreshToken();
 
       // Refresh auth state after token refresh
       await checkAuth();
@@ -254,28 +287,26 @@ export function useAuth(): UseAuthReturn {
   }, [checkAuth]);
 
   /**
-   * Verify admin role
+   * Verify admin role using direct Funifier service
    */
   const verifyAdmin = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth/verify-admin', {
-        method: 'GET',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        
-        setState(prev => ({
-          ...prev,
-          isAdmin: data.isAdmin,
-          roles: data.roles,
-        }));
-
-        return data.isAdmin;
+      const funifierService = getFunifierDirectService();
+      const userId = funifierService.getUserId();
+      
+      if (!userId) {
+        return false;
       }
 
-      return false;
+      const adminVerification = await funifierService.verifyAdminRole(userId);
+      
+      setState(prev => ({
+        ...prev,
+        isAdmin: adminVerification.isAdmin,
+        roles: adminVerification.roles || [],
+      }));
+
+      return adminVerification.isAdmin;
     } catch (error) {
       console.error('Admin verification failed:', error);
       return false;

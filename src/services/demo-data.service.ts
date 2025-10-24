@@ -8,9 +8,11 @@ import {
   PersonalCard
 } from '@/types/funifier';
 import { PerformanceGraph } from '@/types/dashboard';
+import { demoModeService } from './demo-mode.service';
 
 /**
  * Service for generating demo data for the white-label platform
+ * IMPORTANT: This service should ONLY be used when demo mode is active
  */
 export class DemoDataService {
   private static instance: DemoDataService;
@@ -26,13 +28,10 @@ export class DemoDataService {
 
   /**
    * Check if the app is running in demo mode
+   * @deprecated Use demoModeService.isDemoMode() instead
    */
   isDemoMode(): boolean {
-    // Check if we're in development mode or if demo mode is explicitly enabled
-    return process.env.NODE_ENV === 'development' || 
-           process.env.NEXT_PUBLIC_DEMO_MODE === 'true' ||
-           !process.env.FUNIFIER_API_KEY ||
-           process.env.FUNIFIER_API_KEY === 'demo';
+    return demoModeService.isDemoMode();
   }
 
   /**

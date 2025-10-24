@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { DashboardNavigation } from './DashboardNavigation';
+import { SystemNavigation } from '@/components/navigation';
 import { DashboardHeader } from './DashboardHeader';
 
 interface DashboardLayoutProps {
@@ -11,6 +11,12 @@ interface DashboardLayoutProps {
   showNavigation?: boolean;
 }
 
+/**
+ * DashboardLayout Component
+ * 
+ * Main layout for dashboard pages with integrated SystemNavigation
+ * Provides seamless navigation across admin and user interfaces
+ */
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
   playerName,
@@ -27,7 +33,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <div className="flex">
         {showNavigation && (
           <aside className="hidden md:block w-64 bg-white shadow-sm border-r border-gray-200 min-h-[calc(100vh-4rem)]">
-            <DashboardNavigation />
+            {/* Use SystemNavigation for seamless navigation across all interfaces */}
+            <SystemNavigation variant="sidebar" />
           </aside>
         )}
         
@@ -37,6 +44,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </div>
         </main>
       </div>
+      
+      {/* Mobile Navigation */}
+      {showNavigation && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+          <SystemNavigation variant="mobile" showLabels={false} />
+        </div>
+      )}
     </div>
   );
 };

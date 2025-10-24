@@ -9,6 +9,7 @@ import { FunifierStatusPanel } from '@/components/admin/FunifierStatusPanel';
 import { AdminOverview } from '@/components/admin/AdminOverview';
 import SecurityPanel from '@/components/admin/SecurityPanel';
 import { DemoModePanel } from '@/components/admin/DemoModePanel';
+import { SystemNavigationHeader } from '@/components/navigation';
 import { WhiteLabelFeatures } from '@/types/funifier';
 
 function AdminPageContent() {
@@ -96,6 +97,11 @@ function AdminPageContent() {
                 Logout
               </button>
             </div>
+          </div>
+          
+          {/* System Navigation */}
+          <div className="pb-4 border-t border-gray-200 mt-4 pt-4">
+            <SystemNavigationHeader />
           </div>
         </div>
       </header>

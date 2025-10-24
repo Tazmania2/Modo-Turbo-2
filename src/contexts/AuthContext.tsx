@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useAuth, UseAuthReturn } from '@/hooks/useAuth';
+import { useTokenRefresh } from '@/hooks/useTokenRefresh';
 
 const AuthContext = createContext<UseAuthReturn | undefined>(undefined);
 
@@ -11,6 +12,15 @@ export interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const auth = useAuth();
+  
+  // Set up automatic token refresh for authenticated users
+  useTokenRefresh({
+    refreshInterval: 15 * 60 * 1000, // 15 minutes
+    refreshOnFocus: true,
+    onRefreshError: (error) => {
+      console.error('Automatic token refresh failed:', error);
+    },
+  });
 
   return (
     <AuthContext.Provider value={auth}>

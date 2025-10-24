@@ -17,7 +17,10 @@ import {
   RefreshCw,
   Rocket
 } from 'lucide-react';
-import { FunifierPlayerStatus, WhiteLabelConfiguration } from '@/types/funifier';
+import { FunifierPlayerStatus } from '@/types/funifier';
+import { getFunifierDirectService } from '@/services/funifier-direct.service';
+import { WhiteLabelConfig } from '@/types/funifier-api-responses';
+import { getAdminOperationsService } from '@/services/admin-operations.service';
 
 interface AdminOverviewProps {
   user: FunifierPlayerStatus;
@@ -33,6 +36,15 @@ interface SystemStatus {
   enabledFeatures: number;
 }
 
+interface QuickActionState {
+  isExecuting: boolean;
+  lastAction: string | null;
+  lastResult: {
+    success: boolean;
+    message: string;
+  } | null;
+}
+
 export function AdminOverview({ user, instanceId, onNavigateToTab }: AdminOverviewProps) {
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
     funifierConnection: 'testing',
@@ -41,8 +53,13 @@ export function AdminOverview({ user, instanceId, onNavigateToTab }: AdminOvervi
     totalFeatures: 0,
     enabledFeatures: 0
   });
-  const [configuration, setConfiguration] = useState<WhiteLabelConfiguration | null>(null);
+  const [configuration, setConfiguration] = useState<WhiteLabelConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [quickActionState, setQuickActionState] = useState<QuickActionState>({
+    isExecuting: false,
+    lastAction: null,
+    lastResult: null,
+  });
 
   useEffect(() => {
     loadSystemStatus();
@@ -51,47 +68,40 @@ export function AdminOverview({ user, instanceId, onNavigateToTab }: AdminOvervi
   const loadSystemStatus = async () => {
     setIsLoading(true);
     try {
-      // Load configuration
-      const configResponse = await fetch(`/api/config/white-label?instance=${instanceId}`);
-      if (configResponse.ok) {
-        const config = await configResponse.json();
-        setConfiguration(config);
+      // Get Funifier Direct Service instance
+      const funifierService = getFunifierDirectService();
+      funifierService.setInstanceId(instanceId);
 
-        // Check branding configuration
-        const brandingConfigured = !!(
-          config.branding?.companyName ||
-          config.branding?.logo ||
-          (config.branding?.primaryColor && config.branding.primaryColor !== '#3B82F6')
-        );
+      // Load configuration directly from Funifier
+      const config = await funifierService.getWhiteLabelConfig();
+      setConfiguration(config);
 
-        // Count features
-        const features = config.features || {};
-        const totalFeatures = Object.keys(features).length;
-        const enabledFeatures = Object.values(features).filter(Boolean).length;
+      // Check branding configuration
+      const brandingConfigured = !!(
+        config.branding?.companyName ||
+        config.branding?.logo ||
+        (config.branding?.primaryColor && config.branding.primaryColor !== '#3B82F6')
+      );
 
-        setSystemStatus(prev => ({
-          ...prev,
-          featuresConfigured: totalFeatures > 0,
-          brandingConfigured,
-          totalFeatures,
-          enabledFeatures
-        }));
-      }
+      // Count features
+      const features = config.features || {};
+      const totalFeatures = Object.keys(features).length;
+      const enabledFeatures = Object.values(features).filter((value) => value === true).length;
 
-      // Test Funifier connection
-      const connectionResponse = await fetch(`/api/admin/funifier-credentials/test?instance=${instanceId}`);
-      if (connectionResponse.ok) {
-        const result = await connectionResponse.json();
-        setSystemStatus(prev => ({
-          ...prev,
-          funifierConnection: result.isValid ? 'connected' : 'disconnected'
-        }));
-      } else {
-        setSystemStatus(prev => ({
-          ...prev,
-          funifierConnection: 'disconnected'
-        }));
-      }
+      setSystemStatus(prev => ({
+        ...prev,
+        featuresConfigured: totalFeatures > 0,
+        brandingConfigured,
+        totalFeatures,
+        enabledFeatures
+      }));
+
+      // Test Funifier connection directly
+      const healthCheck = await funifierService.healthCheck();
+      setSystemStatus(prev => ({
+        ...prev,
+        funifierConnection: healthCheck.status === 'ok' ? 'connected' : 'disconnected'
+      }));
 
     } catch (error) {
       console.error('Failed to load system status:', error);
@@ -128,6 +138,100 @@ export function AdminOverview({ user, instanceId, onNavigateToTab }: AdminOvervi
       default:
         return <AlertTriangle className="h-5 w-5 text-gray-500" />;
     }
+  };
+
+  // ============================================================================
+  // Quick Action Handlers
+  // ============================================================================
+
+  const executeQuickAction = async (
+    actionName: string,
+    actionFn: () => Promise<{ success: boolean; message: string }>
+  ) => {
+    setQuickActionState({
+      isExecuting: true,
+      lastAction: actionName,
+      lastResult: null,
+    });
+
+    try {
+      const result = await actionFn();
+      
+      setQuickActionState({
+        isExecuting: false,
+        lastAction: actionName,
+        lastResult: result,
+      });
+
+      // Auto-clear success messages after 5 seconds
+      if (result.success) {
+        setTimeout(() => {
+          setQuickActionState(prev => ({
+            ...prev,
+            lastResult: null,
+          }));
+        }, 5000);
+      }
+    } catch (error) {
+      setQuickActionState({
+        isExecuting: false,
+        lastAction: actionName,
+        lastResult: {
+          success: false,
+          message: (error as Error).message,
+        },
+      });
+    }
+  };
+
+  const handleRefreshStatus = async () => {
+    await executeQuickAction('Refresh Status', async () => {
+      await loadSystemStatus();
+      return {
+        success: true,
+        message: 'System status refreshed successfully',
+      };
+    });
+  };
+
+  const handleClearCaches = async () => {
+    await executeQuickAction('Clear Caches', async () => {
+      const adminService = getAdminOperationsService();
+      const result = await adminService.clearAllCaches();
+      return result;
+    });
+  };
+
+  const handleSyncConfiguration = async () => {
+    await executeQuickAction('Sync Configuration', async () => {
+      const adminService = getAdminOperationsService();
+      const result = await adminService.syncConfiguration();
+      
+      if (result.success && result.data) {
+        setConfiguration(result.data as WhiteLabelConfig);
+      }
+      
+      return result;
+    });
+  };
+
+  const handleTestConnection = async () => {
+    await executeQuickAction('Test Connection', async () => {
+      const funifierService = getFunifierDirectService();
+      const healthCheck = await funifierService.healthCheck();
+      
+      setSystemStatus(prev => ({
+        ...prev,
+        funifierConnection: healthCheck.status === 'ok' ? 'connected' : 'disconnected',
+      }));
+      
+      return {
+        success: healthCheck.status === 'ok',
+        message: healthCheck.status === 'ok' 
+          ? 'Connection test successful' 
+          : 'Connection test failed',
+      };
+    });
   };
 
   if (isLoading) {
@@ -358,7 +462,7 @@ export function AdminOverview({ user, instanceId, onNavigateToTab }: AdminOvervi
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Platform Mode:</span>
                 <Badge className="bg-blue-100 text-blue-800">
-                  {configuration?.funifierIntegration?.apiKey ? 'Funifier' : 'Demo'}
+                  {systemStatus.funifierConnection === 'connected' ? 'Funifier' : 'Demo'}
                 </Badge>
               </div>
 
@@ -384,29 +488,140 @@ export function AdminOverview({ user, instanceId, onNavigateToTab }: AdminOvervi
                 </span>
               </div>
 
-              {configuration?.funifierIntegration?.serverUrl && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Funifier Server:</span>
-                  <span className="text-sm text-gray-500 truncate max-w-32">
-                    {configuration.funifierIntegration.serverUrl}
-                  </span>
-                </div>
-              )}
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Funifier Server:</span>
+                <span className="text-sm text-gray-500 truncate max-w-32">
+                  {process.env.NEXT_PUBLIC_FUNIFIER_URL || 'Not configured'}
+                </span>
+              </div>
             </div>
 
             <div className="pt-3 border-t">
               <Button
                 variant="outline"
-                onClick={loadSystemStatus}
+                onClick={handleRefreshStatus}
+                disabled={quickActionState.isExecuting}
                 className="w-full flex items-center gap-2"
               >
-                <RefreshCw className="h-4 w-4" />
+                <RefreshCw className={`h-4 w-4 ${quickActionState.isExecuting && quickActionState.lastAction === 'Refresh Status' ? 'animate-spin' : ''}`} />
                 Refresh Status
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Quick Actions Panel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Rocket className="h-5 w-5" />
+            Quick Actions
+          </CardTitle>
+          <CardDescription>
+            Execute common administrative tasks
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Action Feedback */}
+          {quickActionState.lastResult && (
+            <div
+              className={`p-3 rounded-lg border ${
+                quickActionState.lastResult.success
+                  ? 'bg-green-50 border-green-200'
+                  : 'bg-red-50 border-red-200'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                {quickActionState.lastResult.success ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600" />
+                )}
+                <p
+                  className={`text-sm font-medium ${
+                    quickActionState.lastResult.success
+                      ? 'text-green-800'
+                      : 'text-red-800'
+                  }`}
+                >
+                  {quickActionState.lastResult.message}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Action Buttons */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              onClick={handleTestConnection}
+              disabled={quickActionState.isExecuting}
+              className="flex items-center gap-2 justify-start"
+            >
+              {quickActionState.isExecuting && quickActionState.lastAction === 'Test Connection' ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Server className="h-4 w-4" />
+              )}
+              Test Connection
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleSyncConfiguration}
+              disabled={quickActionState.isExecuting}
+              className="flex items-center gap-2 justify-start"
+            >
+              {quickActionState.isExecuting && quickActionState.lastAction === 'Sync Configuration' ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Sync Configuration
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={handleClearCaches}
+              disabled={quickActionState.isExecuting}
+              className="flex items-center gap-2 justify-start"
+            >
+              {quickActionState.isExecuting && quickActionState.lastAction === 'Clear Caches' ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Clear Caches
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => onNavigateToTab('settings')}
+              disabled={quickActionState.isExecuting}
+              className="flex items-center gap-2 justify-start"
+            >
+              <Settings className="h-4 w-4" />
+              Configure System
+            </Button>
+          </div>
+
+          {/* Cache Statistics */}
+          <div className="pt-3 border-t">
+            <p className="text-sm text-gray-600 mb-2">Cache Statistics</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-gray-50 p-2 rounded">
+                <span className="text-gray-500">Hit Rate:</span>
+                <span className="ml-1 font-medium">-</span>
+              </div>
+              <div className="bg-gray-50 p-2 rounded">
+                <span className="text-gray-500">Size:</span>
+                <span className="ml-1 font-medium">-</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Health Alerts */}
       {systemStatus.funifierConnection === 'disconnected' && (

@@ -76,9 +76,12 @@ export class FunifierEnvService {
 
   /**
    * Check if demo mode is enabled
+   * @deprecated Use demoModeService.isDemoMode() instead
    */
   public isDemoMode(): boolean {
-    return process.env.DEMO_MODE_ENABLED === 'true';
+    // Import dynamically to avoid circular dependencies
+    const { demoModeService } = require('./demo-mode.service');
+    return demoModeService.isDemoMode();
   }
 
   /**

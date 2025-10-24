@@ -99,6 +99,7 @@ export function createSessionMetadata(request: NextRequest) {
 
 /**
  * Verify authentication token and return validation result
+ * This function should be used with actual Funifier token validation
  */
 export async function verifyAuthToken(request: NextRequest): Promise<{
   isValid: boolean;
@@ -115,9 +116,7 @@ export async function verifyAuthToken(request: NextRequest): Promise<{
       };
     }
 
-    // For now, we'll do a simple token validation
-    // In a real implementation, this would verify the JWT token
-    // and fetch user data from the session or database
+    // Validate token format
     if (token.length < 10) {
       return {
         isValid: false,
@@ -125,28 +124,14 @@ export async function verifyAuthToken(request: NextRequest): Promise<{
       };
     }
 
-    // Mock user data for now - in real implementation this would come from token validation
-    const mockUser: FunifierPlayerStatus = {
-      _id: 'admin-user',
-      name: 'Admin User',
-      total_points: 0,
-      level_progress: { percent_completed: 0, next_points: 0, total_levels: 1, percent: 0 },
-      teams: ['admin'],
-      time: Date.now(),
-      total_challenges: 0,
-      challenges: {},
-      point_categories: {},
-      total_catalog_items: 0,
-      catalog_items: {},
-      challenge_progress: [],
-      positions: [],
-      extra: {},
-      pointCategories: {}
-    };
-
+    // TODO: Implement actual Funifier token validation
+    // This should call Funifier API to verify the token and get user data
+    // For now, we return a basic validation result
+    // The actual user data should come from the Funifier API response
+    
     return {
-      isValid: true,
-      user: mockUser
+      isValid: false,
+      error: 'Token validation not implemented - use FunifierDirectService for authentication'
     };
 
   } catch (error) {

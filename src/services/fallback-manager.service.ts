@@ -1,6 +1,7 @@
 import { FallbackMechanism, ErrorType } from '@/types/error';
 import { errorLogger } from './error-logger.service';
 import { demoDataService } from './demo-data.service';
+import { demoModeService } from './demo-mode.service';
 
 export interface FallbackConfig {
   [key: string]: FallbackMechanism;
@@ -158,30 +159,40 @@ class FallbackManagerService {
 
   /**
    * Get demo data as fallback
+   * Only returns demo data if demo mode is active
    */
   private async getDemoData<T>(fallbackKey: string): Promise<T> {
+    // Verify demo mode is active before returning demo data
+    if (!demoModeService.isDemoMode()) {
+      throw new Error('Demo data requested but demo mode is not active');
+    }
+
     switch (fallbackKey) {
       case 'dashboardData':
         // Generate demo dashboard data using available methods
         const players = demoDataService.generatePlayers(50);
         const playerStatus = demoDataService.generatePlayerStatus('demo_player_1');
-        return {
+        const data = {
           player: playerStatus,
           goals: playerStatus.challenges,
           leaderboards: demoDataService.generateLeaderboards(),
-          performanceGraphs: demoDataService.generateCurrentSeasonPerformanceGraphs('demo_player_1')
-        } as T;
+          performanceGraphs: demoDataService.generateCurrentSeasonPerformanceGraphs('demo_player_1'),
+          source: 'demo' // Mark as demo data
+        };
+        return data as T;
       
       case 'rankingData':
         // Generate demo ranking data
         const rankingPlayers = demoDataService.generatePlayers(50);
-        return {
+        const rankingData = {
           players: rankingPlayers,
           leaderboards: demoDataService.generateLeaderboards(),
           raceVisualization: demoDataService.generateRaceVisualization(rankingPlayers),
           personalCard: demoDataService.generatePersonalCard('demo_player_1', rankingPlayers),
-          contextualRanking: demoDataService.generateContextualRanking('demo_player_1', rankingPlayers)
-        } as T;
+          contextualRanking: demoDataService.generateContextualRanking('demo_player_1', rankingPlayers),
+          source: 'demo' // Mark as demo data
+        };
+        return rankingData as T;
       
       case 'configuration':
         // Generate demo white label configuration
@@ -197,7 +208,8 @@ class FallbackManagerService {
             ranking: true,
             history: true,
             admin: true
-          }
+          },
+          source: 'demo' // Mark as demo data
         } as T;
       
       default:

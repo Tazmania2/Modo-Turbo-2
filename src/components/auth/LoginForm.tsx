@@ -24,9 +24,10 @@ export function LoginForm({
     setError(null);
 
     try {
-      // Get instance ID from URL if available
+      // Get URL parameters for deep linking support
       const urlParams = new URLSearchParams(window.location.search);
       const instanceId = urlParams.get('instance');
+      const redirectParam = urlParams.get('redirect');
       
       // Use the proper authentication API
       const loginUrl = instanceId 
@@ -47,16 +48,26 @@ export function LoginForm({
         throw new Error(error.error || 'Login failed');
       }
 
-      // Success - check if user is admin and redirect appropriately
-      if (requireAdmin) {
-        // For admin login, redirect to admin panel
-        const redirectTo = instanceId ? `/admin?instance=${instanceId}` : '/admin';
-        window.location.href = redirectTo;
+      // Success - handle deep linking with authentication preservation
+      let redirectTo: string;
+      
+      if (redirectParam) {
+        // Deep linking: redirect to the intended destination
+        redirectTo = redirectParam;
+        // Preserve instance ID if present
+        if (instanceId && !redirectTo.includes('instance=')) {
+          const separator = redirectTo.includes('?') ? '&' : '?';
+          redirectTo = `${redirectTo}${separator}instance=${instanceId}`;
+        }
+      } else if (requireAdmin) {
+        // For admin login without redirect, go to admin panel
+        redirectTo = instanceId ? `/admin?instance=${instanceId}` : '/admin';
       } else {
-        // For regular login, redirect to dashboard
-        const redirectTo = instanceId ? `/dashboard?instance=${instanceId}` : '/dashboard';
-        window.location.href = redirectTo;
+        // For regular login without redirect, go to dashboard
+        redirectTo = instanceId ? `/dashboard?instance=${instanceId}` : '/dashboard';
       }
+      
+      window.location.href = redirectTo;
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

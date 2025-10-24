@@ -5,164 +5,258 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 interface LoadingStateOptions {
   timeout?: number;
   onTimeout?: () => void;
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
+  minDuration?: number;
 }
 
 interface LoadingState {
   isLoading: boolean;
-  error: Error | null;
-  progress: number;
+  startTime: number | null;
   elapsedTime: number;
-  hasTimedOut: boolean;
 }
 
-interface LoadingActions {
-  startLoading: () => void;
-  stopLoading: () => void;
-  setError: (error: Error) => void;
-  setProgress: (progress: number) => void;
-  reset: () => void;
-  executeWithLoading: <T>(
-    asyncFn: () => Promise<T>,
-    options?: LoadingStateOptions
-  ) => Promise<T>;
-}
-
-export const useLoadingState = (
-  defaultOptions: LoadingStateOptions = {}
-): [LoadingState, LoadingActions] => {
+/**
+ * Hook for managing loading states with timeout and minimum duration
+ */
+export function useLoadingState(options: LoadingStateOptions = {}) {
+  const { timeout = 30000, onTimeout, minDuration = 0 } = options;
   const [state, setState] = useState<LoadingState>({
     isLoading: false,
-    error: null,
-    progress: 0,
+    startTime: null,
     elapsedTime: 0,
-    hasTimedOut: false,
   });
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const startTimeRef = useRef<number | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startLoading = useCallback(() => {
+    const startTime = Date.now();
+    setState({
+      isLoading: true,
+      startTime,
+      elapsedTime: 0,
+    });
 
-  const clearTimers = useCallback(() => {
+    // Set up elapsed time tracking
+    intervalRef.current = setInterval(() => {
+      setState((prev) => {
+        if (!prev.startTime) return prev;
+        return {
+          ...prev,
+          elapsedTime: Date.now() - prev.startTime,
+        };
+      });
+    }, 100);
+
+    // Set up timeout
+    if (timeout > 0) {
+      timeoutRef.current = setTimeout(() => {
+        if (onTimeout) {
+          onTimeout();
+        }
+      }, timeout);
+    }
+  }, [timeout, onTimeout]);
+
+  const stopLoading = useCallback(async () => {
+    const elapsed = state.startTime ? Date.now() - state.startTime : 0;
+    const remaining = Math.max(0, minDuration - elapsed);
+
+    // Clear timers
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
     }
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
-      intervalRef.current = null;
     }
-  }, []);
 
-  const startLoading = useCallback(() => {
-    clearTimers();
-    startTimeRef.current = Date.now();
-    
-    setState({
-      isLoading: true,
-      error: null,
-      progress: 0,
-      elapsedTime: 0,
-      hasTimedOut: false,
-    });
+    // Wait for minimum duration if needed
+    if (remaining > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remaining));
+    }
 
-    // Start elapsed time tracking
-    intervalRef.current = setInterval(() => {
-      if (startTimeRef.current) {
-        const elapsed = Date.now() - startTimeRef.current;
-        setState(prev => ({ ...prev, elapsedTime: elapsed }));
-      }
-    }, 100);
-  }, [clearTimers]);
-
-  const stopLoading = useCallback(() => {
-    clearTimers();
-    setState(prev => ({ ...prev, isLoading: false }));
-    startTimeRef.current = null;
-  }, [clearTimers]);
-
-  const setError = useCallback((error: Error) => {
-    clearTimers();
-    setState(prev => ({
-      ...prev,
-      isLoading: false,
-      error,
-    }));
-    startTimeRef.current = null;
-  }, [clearTimers]);
-
-  const setProgress = useCallback((progress: number) => {
-    setState(prev => ({ ...prev, progress: Math.min(Math.max(progress, 0), 100) }));
-  }, []);
-
-  const reset = useCallback(() => {
-    clearTimers();
     setState({
       isLoading: false,
-      error: null,
-      progress: 0,
+      startTime: null,
       elapsedTime: 0,
-      hasTimedOut: false,
     });
-    startTimeRef.current = null;
-  }, [clearTimers]);
+  }, [state.startTime, minDuration]);
 
-  const executeWithLoading = useCallback(
-    async <T>(
-      asyncFn: () => Promise<T>,
-      options: LoadingStateOptions = {}
-    ): Promise<T> => {
-      const mergedOptions = { ...defaultOptions, ...options };
-      const { timeout, onTimeout, onSuccess, onError } = mergedOptions;
-
-      startLoading();
-
-      // Set up timeout if specified
-      if (timeout && timeout > 0) {
-        timeoutRef.current = setTimeout(() => {
-          setState(prev => ({ ...prev, hasTimedOut: true }));
-          if (onTimeout) {
-            onTimeout();
-          }
-        }, timeout);
-      }
-
-      try {
-        const result = await asyncFn();
-        stopLoading();
-        if (onSuccess) {
-          onSuccess();
-        }
-        return result;
-      } catch (error) {
-        const errorObj = error instanceof Error ? error : new Error(String(error));
-        setError(errorObj);
-        if (onError) {
-          onError(errorObj);
-        }
-        throw error;
-      }
-    },
-    [defaultOptions, startLoading, stopLoading, setError]
-  );
+  const resetLoading = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    setState({
+      isLoading: false,
+      startTime: null,
+      elapsedTime: 0,
+    });
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      clearTimers();
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
-  }, [clearTimers]);
+  }, []);
 
-  return [
-    state,
-    {
-      startLoading,
-      stopLoading,
-      setError,
-      setProgress,
-      reset,
-      executeWithLoading,
+  return {
+    isLoading: state.isLoading,
+    elapsedTime: state.elapsedTime,
+    startLoading,
+    stopLoading,
+    resetLoading,
+  };
+}
+
+/**
+ * Hook for managing multiple loading states
+ */
+export function useMultiLoadingState() {
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({});
+
+  const setLoading = useCallback((key: string, isLoading: boolean) => {
+    setLoadingStates((prev) => ({
+      ...prev,
+      [key]: isLoading,
+    }));
+  }, []);
+
+  const isAnyLoading = useCallback(() => {
+    return Object.values(loadingStates).some((loading) => loading);
+  }, [loadingStates]);
+
+  const isLoading = useCallback(
+    (key: string) => {
+      return loadingStates[key] || false;
     },
-  ];
-};
+    [loadingStates]
+  );
+
+  const resetAll = useCallback(() => {
+    setLoadingStates({});
+  }, []);
+
+  return {
+    loadingStates,
+    setLoading,
+    isLoading,
+    isAnyLoading: isAnyLoading(),
+    resetAll,
+  };
+}
+
+/**
+ * Hook for async operations with automatic loading state management
+ */
+export function useAsyncLoading<T, Args extends any[]>(
+  asyncFn: (...args: Args) => Promise<T>,
+  options: LoadingStateOptions & {
+    onSuccess?: (data: T) => void;
+    onError?: (error: Error) => void;
+  } = {}
+) {
+  const { onSuccess, onError, ...loadingOptions } = options;
+  const loadingState = useLoadingState(loadingOptions);
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+
+  const execute = useCallback(
+    async (...args: Args) => {
+      loadingState.startLoading();
+      setError(null);
+
+      try {
+        const result = await asyncFn(...args);
+        setData(result);
+        if (onSuccess) {
+          onSuccess(result);
+        }
+        return result;
+      } catch (err) {
+        const error = err as Error;
+        setError(error);
+        if (onError) {
+          onError(error);
+        }
+        throw error;
+      } finally {
+        await loadingState.stopLoading();
+      }
+    },
+    [asyncFn, loadingState, onSuccess, onError]
+  );
+
+  const reset = useCallback(() => {
+    setData(null);
+    setError(null);
+    loadingState.resetLoading();
+  }, [loadingState]);
+
+  return {
+    data,
+    error,
+    isLoading: loadingState.isLoading,
+    elapsedTime: loadingState.elapsedTime,
+    execute,
+    reset,
+  };
+}
+
+/**
+ * Hook for progress tracking
+ */
+export function useProgress(totalSteps: number) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  const progress = (completedSteps.size / totalSteps) * 100;
+
+  const nextStep = useCallback(() => {
+    setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
+  }, [totalSteps]);
+
+  const previousStep = useCallback(() => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  const goToStep = useCallback(
+    (step: number) => {
+      setCurrentStep(Math.max(0, Math.min(step, totalSteps - 1)));
+    },
+    [totalSteps]
+  );
+
+  const completeStep = useCallback((step: number) => {
+    setCompletedSteps((prev) => new Set(prev).add(step));
+  }, []);
+
+  const completeCurrentStep = useCallback(() => {
+    setCompletedSteps((prev) => new Set(prev).add(currentStep));
+    nextStep();
+  }, [currentStep, nextStep]);
+
+  const reset = useCallback(() => {
+    setCurrentStep(0);
+    setCompletedSteps(new Set());
+  }, []);
+
+  return {
+    currentStep,
+    progress,
+    completedSteps: Array.from(completedSteps),
+    isStepCompleted: (step: number) => completedSteps.has(step),
+    nextStep,
+    previousStep,
+    goToStep,
+    completeStep,
+    completeCurrentStep,
+    reset,
+  };
+}

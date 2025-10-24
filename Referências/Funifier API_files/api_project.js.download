@@ -1,0 +1,15 @@
+define({
+  "name": "Funifier API",
+  "version": "3.0.0",
+  "description": "Funifier API Documentation",
+  "title": "Funifier API",
+  "url": "https://service2.funifier.com",
+  "sampleUrl": false,
+  "apidoc": "0.2.0",
+  "generator": {
+    "name": "apidoc",
+    "time": "2018-08-04T22:38:03.007Z",
+    "url": "http://apidocjs.com",
+    "version": "0.16.0"
+  }
+});

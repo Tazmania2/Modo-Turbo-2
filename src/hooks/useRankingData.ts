@@ -6,6 +6,10 @@ import {
 } from '@/services/ranking-leaderboard.service';
 import { RankingDashboardData } from '@/services/ranking-integration.service';
 import { getApiEndpoint } from '@/utils/demo';
+import { getFunifierDirectService } from '@/services/funifier-direct.service';
+import { GlobalRanking, PersonalizedRanking } from '@/types/funifier-api-responses';
+import { demoModeService } from '@/services/demo-mode.service';
+import { demoDataService } from '@/services/demo-data.service';
 
 interface UseRankingDataOptions {
   playerId?: string;
@@ -73,19 +77,39 @@ export function useRankingData(options: UseRankingDataOptions = {}): UseRankingD
     setLeaderboardsError(null);
     
     try {
-      const endpoint = getApiEndpoint('/api/ranking/leaderboards?refresh=true');
-      const response = await fetch(endpoint);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      // Check if we're in demo mode using centralized service
+      const isDemoMode = demoModeService.isDemoMode();
       
-      const data = await response.json();
-      
-      // Handle demo mode response format
-      if (data.leaderboards) {
-        setLeaderboards({ leaderboards: data.leaderboards });
-      } else {
+      if (isDemoMode) {
+        // Use demo data generator for demo mode
+        console.log('[useRankingData] Using demo leaderboards');
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+        
+        const demoLeaderboards = demoDataService.generateLeaderboards();
+        const data = { leaderboards: demoLeaderboards };
+        
+        // Validate data source
+        demoModeService.validateDataSource(data, 'demo');
         setLeaderboards(data);
+      } else {
+        // Production mode - use direct Funifier API
+        console.log('[useRankingData] Using Funifier API for leaderboards');
+        const funifierService = getFunifierDirectService();
+        
+        // For now, use internal API as leaderboards list endpoint may not be standard
+        // This can be enhanced when Funifier provides a leaderboards list endpoint
+        const endpoint = getApiEndpoint('/api/ranking/leaderboards?refresh=true');
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (data.leaderboards) {
+          setLeaderboards({ leaderboards: data.leaderboards });
+        } else {
+          setLeaderboards(data);
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch leaderboards';
@@ -104,28 +128,94 @@ export function useRankingData(options: UseRankingDataOptions = {}): UseRankingD
     setPersonalRankingError(null);
     
     try {
-      const endpoint = getApiEndpoint(`/api/ranking/${leaderboardId || 'demo'}/personal/${playerId}?refresh=true`);
-      const response = await fetch(endpoint);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      // Check if we're in demo mode
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDemoMode = urlParams.get('mode') === 'demo';
       
-      const data = await response.json();
-      
-      // Handle demo mode response format
-      if (data.personalCard) {
+      if (isDemoMode) {
+        // Use internal API for demo mode
+        const endpoint = getApiEndpoint(`/api/ranking/${leaderboardId || 'demo'}/personal/${playerId}?refresh=true`);
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Handle demo mode response format
+        if (data.personalCard) {
+          setPersonalRanking({
+            raceData: data.raceVisualization || null,
+            personalCard: data.personalCard,
+            topThree: data.players?.slice(0, 3) || [],
+            contextualRanking: data.contextualRanking || {
+              above: null,
+              current: data.personalCard,
+              below: null
+            }
+          });
+        } else {
+          setPersonalRanking(data);
+        }
+      } else {
+        // Use direct Funifier API
+        const funifierService = getFunifierDirectService();
+        const personalizedRanking = await funifierService.getPersonalizedRanking(playerId);
+        
+        // Convert to expected format
+        const userPosition = personalizedRanking.userPosition;
+        const leaders = personalizedRanking.leaders || [];
+        
         setPersonalRanking({
-          raceData: data.raceVisualization || null,
-          personalCard: data.personalCard,
-          topThree: data.players?.slice(0, 3) || [],
-          contextualRanking: data.contextualRanking || {
+          raceData: {
+            raceTrack: { length: 100, segments: 10, theme: 'default' },
+            participants: [],
+            animations: { enabled: false, speed: 1, effects: [] }
+          },
+          personalCard: {
+            playerId: userPosition.player,
+            playerName: userPosition.name || 'Unknown',
+            avatar: userPosition.image,
+            currentPosition: userPosition.position,
+            previousPosition: userPosition.position,
+            totalPoints: userPosition.total,
+            pointsGainedToday: 0,
+            team: 'Default Team',
+            level: 1,
+            nextLevelPoints: 1000,
+            achievements: [],
+            streaks: { current: 0, longest: 0 },
+            lastActivity: new Date()
+          },
+          topThree: leaders.slice(0, 3).map(leader => ({
+            _id: leader.player,
+            name: leader.name || 'Unknown',
+            totalPoints: leader.total,
+            position: leader.position,
+            previousPosition: leader.position,
+            pointsGainedToday: 0,
+            avatar: leader.image,
+            team: 'Default Team',
+            goals: [],
+            lastUpdated: new Date()
+          })),
+          contextualRanking: {
             above: null,
-            current: data.personalCard,
+            current: {
+              _id: userPosition.player,
+              name: userPosition.name || 'Unknown',
+              totalPoints: userPosition.total,
+              position: userPosition.position,
+              previousPosition: userPosition.position,
+              pointsGainedToday: 0,
+              avatar: userPosition.image,
+              team: 'Default Team',
+              goals: [],
+              lastUpdated: new Date()
+            },
             below: null
           }
         });
-      } else {
-        setPersonalRanking(data);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch personal ranking';
@@ -142,22 +232,56 @@ export function useRankingData(options: UseRankingDataOptions = {}): UseRankingD
     setGlobalRankingError(null);
     
     try {
-      const endpoint = getApiEndpoint(`/api/ranking/${leaderboardId || 'demo'}/global?refresh=true`);
-      const response = await fetch(endpoint);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      // Check if we're in demo mode
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDemoMode = urlParams.get('mode') === 'demo';
       
-      const data = await response.json();
-      
-      // Handle demo mode response format
-      if (data.players) {
-        setGlobalRanking({
-          raceData: data.raceVisualization || null,
-          fullRanking: data.players
-        });
+      if (isDemoMode) {
+        // Use internal API for demo mode
+        const endpoint = getApiEndpoint(`/api/ranking/${leaderboardId || 'demo'}/global?refresh=true`);
+        const response = await fetch(endpoint);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Handle demo mode response format
+        if (data.players) {
+          setGlobalRanking({
+            raceData: data.raceVisualization || null,
+            fullRanking: data.players
+          });
+        } else {
+          setGlobalRanking(data);
+        }
       } else {
-        setGlobalRanking(data);
+        // Use direct Funifier API
+        const funifierService = getFunifierDirectService();
+        const globalRankingData = await funifierService.getRankingData();
+        
+        // Convert to expected format
+        const leaders = globalRankingData.leaders || [];
+        
+        setGlobalRanking({
+          raceData: {
+            raceTrack: { length: 100, segments: 10, theme: 'default' },
+            participants: [],
+            animations: { enabled: false, speed: 1, effects: [] }
+          },
+          fullRanking: leaders.map(leader => ({
+            _id: leader.player,
+            name: leader.name || 'Unknown',
+            totalPoints: leader.total,
+            position: leader.position,
+            previousPosition: leader.position,
+            pointsGainedToday: 0,
+            avatar: leader.image,
+            team: 'Default Team',
+            goals: [],
+            lastUpdated: new Date()
+          }))
+        });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch global ranking';
