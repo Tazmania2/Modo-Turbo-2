@@ -2,6 +2,7 @@ import { SetupRequest } from '@/types/funifier';
 import { whiteLabelConfigService } from './white-label-config.service';
 import { funifierAuthService } from './funifier-auth.service';
 import { demoDataService } from './demo-data.service';
+import { demoModeService } from './demo-mode.service';
 
 export interface SetupResult {
   success: boolean;
@@ -129,15 +130,10 @@ export class SetupService {
    */
   async needsSetup(instanceId?: string): Promise<boolean> {
     try {
-      // Check if demo data is available (indicates demo mode is possible)
-      try {
-        const demoCheck = await fetch('/api/demo-data');
-        if (demoCheck.ok) {
-          console.log('Demo mode available, setup not strictly required');
-          // Demo mode is available, but still check if Funifier is configured
-        }
-      } catch (demoError) {
-        console.log('Demo mode not available');
+      // Check if demo mode is available using the demo mode service
+      if (demoModeService.isDemoMode()) {
+        console.log('Demo mode available, setup not strictly required');
+        // Demo mode is available, but still check if Funifier is configured
       }
 
       if (!instanceId) {

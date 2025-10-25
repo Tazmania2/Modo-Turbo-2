@@ -3,6 +3,7 @@ import { FunifierPlayerStatus } from '@/types/funifier';
 import { setDemoMode } from '@/utils/demo';
 import { getFunifierDirectService } from '@/services/funifier-direct.service';
 import { UserProfile } from '@/types/funifier-api-responses';
+import { demoModeService } from '@/services/demo-mode.service';
 
 export interface AuthState {
   user: FunifierPlayerStatus | null;
@@ -54,12 +55,8 @@ export function useAuth(): UseAuthReturn {
       
       // Check if user is authenticated via token storage
       if (!funifierService.isAuthenticated()) {
-        // Check if we're in demo mode
-        const demoResponse = await fetch('/api/demo-data', {
-          method: 'GET',
-        });
-
-        if (demoResponse.ok) {
+        // Check if we're in demo mode using the demo mode service
+        if (demoModeService.isDemoMode()) {
           // Create a demo user for demo mode
           const demoUser: FunifierPlayerStatus = {
             _id: 'demo_user_1',
@@ -129,54 +126,40 @@ export function useAuth(): UseAuthReturn {
       console.error('Auth check failed:', error);
       
       // Fallback to demo mode if available
-      try {
-        const demoResponse = await fetch('/api/demo-data', {
-          method: 'GET',
+      if (demoModeService.isDemoMode()) {
+        const demoUser: FunifierPlayerStatus = {
+          _id: 'demo_user_1',
+          name: 'Demo User',
+          total_challenges: 15,
+          challenges: { 'daily_tasks': 8, 'weekly_goals': 4, 'special_events': 3 },
+          total_points: 2450,
+          point_categories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 },
+          total_catalog_items: 5,
+          catalog_items: { 'badges': 3, 'rewards': 2 },
+          level_progress: {
+            percent_completed: 75,
+            next_points: 550,
+            total_levels: 10,
+            percent: 75
+          },
+          challenge_progress: [],
+          teams: ['demo_team'],
+          positions: [],
+          time: Date.now(),
+          extra: {},
+          pointCategories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 }
+        };
+
+        setDemoMode(true);
+
+        setState({
+          user: demoUser,
+          isAuthenticated: true,
+          isLoading: false,
+          isAdmin: false,
+          roles: ['demo_user'],
         });
-
-        if (demoResponse.ok) {
-          const demoUser: FunifierPlayerStatus = {
-            _id: 'demo_user_1',
-            name: 'Demo User',
-            total_challenges: 15,
-            challenges: { 'daily_tasks': 8, 'weekly_goals': 4, 'special_events': 3 },
-            total_points: 2450,
-            point_categories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 },
-            total_catalog_items: 5,
-            catalog_items: { 'badges': 3, 'rewards': 2 },
-            level_progress: {
-              percent_completed: 75,
-              next_points: 550,
-              total_levels: 10,
-              percent: 75
-            },
-            challenge_progress: [],
-            teams: ['demo_team'],
-            positions: [],
-            time: Date.now(),
-            extra: {},
-            pointCategories: { 'productivity': 1200, 'collaboration': 800, 'innovation': 450 }
-          };
-
-          setDemoMode(true);
-
-          setState({
-            user: demoUser,
-            isAuthenticated: true,
-            isLoading: false,
-            isAdmin: false,
-            roles: ['demo_user'],
-          });
-        } else {
-          setState({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            isAdmin: false,
-            roles: [],
-          });
-        }
-      } catch (demoError) {
+      } else {
         setState({
           user: null,
           isAuthenticated: false,

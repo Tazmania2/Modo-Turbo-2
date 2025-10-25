@@ -35,8 +35,9 @@ export function LoginForm({
       // Success - handle deep linking with authentication preservation
       let redirectTo: string;
       
-      if (redirectParam) {
+      if (redirectParam && redirectParam !== '/admin/login' && redirectParam !== '/login') {
         // Deep linking: redirect to the intended destination
+        // But avoid redirecting back to login pages
         redirectTo = redirectParam;
         // Preserve instance ID if present
         if (instanceId && !redirectTo.includes('instance=')) {

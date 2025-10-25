@@ -23,6 +23,7 @@ const ADMIN_ROUTES = [
 const PUBLIC_ROUTES = [
   '/',
   '/login',
+  '/admin/login',
   '/setup',
   '/api/demo-data',
   '/api/setup',
@@ -30,13 +31,35 @@ const PUBLIC_ROUTES = [
 
 /**
  * Check if a path matches any of the route patterns
+ * Note: This checks exact matches or sub-paths, but /admin/login won't match /admin
  */
 function matchesRoute(pathname: string, routes: string[]): boolean {
   return routes.some(route => {
     if (route.endsWith('*')) {
       return pathname.startsWith(route.slice(0, -1));
     }
-    return pathname === route || pathname.startsWith(`${route}/`);
+    // Exact match
+    if (pathname === route) {
+      return true;
+    }
+    // Sub-path match (e.g., /admin/settings matches /admin)
+    // But /admin/login should not match /admin if /admin/login is in PUBLIC_ROUTES
+    if (pathname.startsWith(`${route}/`)) {
+      return true;
+    }
+    return false;
+  });
+}
+
+/**
+ * Check if a path is explicitly public (takes precedence over protected routes)
+ */
+function isPublicRoute(pathname: string): boolean {
+  return PUBLIC_ROUTES.some(route => {
+    if (route.endsWith('*')) {
+      return pathname.startsWith(route.slice(0, -1));
+    }
+    return pathname === route;
   });
 }
 
@@ -148,8 +171,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Skip authentication check for public routes
-  if (matchesRoute(pathname, PUBLIC_ROUTES)) {
+  // Skip authentication check for public routes (check this first!)
+  // Public routes take precedence over protected routes
+  if (isPublicRoute(pathname)) {
     return response;
   }
 
@@ -182,12 +206,14 @@ export async function middleware(request: NextRequest) {
       // Redirect to login for non-API routes with deep linking support
       if (!pathname.startsWith('/api/')) {
         const loginUrl = new URL('/admin/login', request.url);
-        // Preserve the intended destination for deep linking
-        loginUrl.searchParams.set('redirect', pathname);
-        // Preserve query parameters
-        request.nextUrl.searchParams.forEach((value, key) => {
-          loginUrl.searchParams.set(key, value);
-        });
+        // Only add redirect parameter if not already on a login page
+        if (pathname !== '/admin/login' && pathname !== '/login') {
+          loginUrl.searchParams.set('redirect', pathname);
+          // Preserve query parameters
+          request.nextUrl.searchParams.forEach((value, key) => {
+            loginUrl.searchParams.set(key, value);
+          });
+        }
         return NextResponse.redirect(loginUrl);
       }
       
