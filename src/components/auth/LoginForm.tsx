@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 export interface LoginFormProps {
   requireAdmin?: boolean;
@@ -15,8 +16,7 @@ export function LoginForm({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-
+  const { login } = useAuthContext();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,24 +29,8 @@ export function LoginForm({
       const instanceId = urlParams.get('instance');
       const redirectParam = urlParams.get('redirect');
       
-      // Use the proper authentication API
-      const loginUrl = instanceId 
-        ? `/api/auth/login?instance=${instanceId}`
-        : '/api/auth/login';
-
-      const response = await fetch(loginUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(credentials),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Login failed');
-      }
+      // Use direct Funifier authentication via useAuth hook
+      await login(credentials, instanceId);
 
       // Success - handle deep linking with authentication preservation
       let redirectTo: string;
